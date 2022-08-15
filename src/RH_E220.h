@@ -28,24 +28,24 @@
 #define RH_E220_PARAM_SPED_UART_BAUD_115200       0xE0
 
 #define RH_E220_PARAM_SPED_DATARATE_MASK          0x07
-#define RH_E220_PARAM_SPED_DATARATE_2400BPS       0x02
-#define RH_E220_PARAM_SPED_DATARATE_4800BPS       0x03
-#define RH_E220_PARAM_SPED_DATARATE_9600BPS       0x04
-#define RH_E220_PARAM_SPED_DATARATE_19200BPS      0x05
-#define RH_E220_PARAM_SPED_DATARATE_38400BPS      0x06
-#define RH_E220_PARAM_SPED_DATARATE_62500BPS      0x07
+#define RH_E220_PARAM_SPED_DATARATE_2400          0x02
+#define RH_E220_PARAM_SPED_DATARATE_4800          0x03
+#define RH_E220_PARAM_SPED_DATARATE_9600          0x04
+#define RH_E220_PARAM_SPED_DATARATE_19200         0x05
+#define RH_E220_PARAM_SPED_DATARATE_38400         0x06
+#define RH_E220_PARAM_SPED_DATARATE_62500         0x07
 
 #define RH_E220_PARAM_OPT1_SUBPKT_MASK            0xC0
-#define RH_E220_PARAM_OPT1_SUBPKT_200B            0x00
-#define RH_E220_PARAM_OPT1_SUBPKT_128B            0x40
-#define RH_E220_PARAM_OPT1_SUBPKT_64B             0x80
-#define RH_E220_PARAM_OPT1_SUBPKT_32B             0xC0
+#define RH_E220_PARAM_OPT1_SUBPKT_200             0x00
+#define RH_E220_PARAM_OPT1_SUBPKT_128             0x40
+#define RH_E220_PARAM_OPT1_SUBPKT_64              0x80
+#define RH_E220_PARAM_OPT1_SUBPKT_32              0xC0
 
 #define RH_E220_PARAM_OPT1_POWER_MASK             0x03
-#define RH_E220_PARAM_OPT1_POWER_22DBM            0x00
-#define RH_E220_PARAM_OPT1_POWER_17DBM            0x01
-#define RH_E220_PARAM_OPT1_POWER_13DBM            0x02
-#define RH_E220_PARAM_OPT1_POWER_10DBM            0x03
+#define RH_E220_PARAM_OPT1_POWER_22               0x00
+#define RH_E220_PARAM_OPT1_POWER_17               0x01
+#define RH_E220_PARAM_OPT1_POWER_13               0x02
+#define RH_E220_PARAM_OPT1_POWER_10               0x03
 
 #define RH_E220_CONFIG_BAUD_RATE 9600
 
@@ -234,12 +234,12 @@ public:
     ///
     /// This is NOT to be used to control the baud rate of the stream connection to the radio
     typedef enum {
-        DataRate2400bps = RH_E220_PARAM_SPED_DATARATE_2400BPS,
-        DataRate4800bps = RH_E220_PARAM_SPED_DATARATE_4800BPS,
-        DataRate9600bps = RH_E220_PARAM_SPED_DATARATE_9600BPS,
-        DataRate19200bps = RH_E220_PARAM_SPED_DATARATE_19200BPS,
-        DataRate38400bps = RH_E220_PARAM_SPED_DATARATE_38400BPS,
-        DataRate62500bps = RH_E220_PARAM_SPED_DATARATE_62500BPS,
+        DataRate2400bps = RH_E220_PARAM_SPED_DATARATE_2400,
+        DataRate4800bps = RH_E220_PARAM_SPED_DATARATE_4800,
+        DataRate9600bps = RH_E220_PARAM_SPED_DATARATE_9600,
+        DataRate19200bps = RH_E220_PARAM_SPED_DATARATE_19200,
+        DataRate38400bps = RH_E220_PARAM_SPED_DATARATE_38400,
+        DataRate62500bps = RH_E220_PARAM_SPED_DATARATE_62500,
     } DataRate;
 
     /// Sets the on-air data rate to be used by the transmitter and receiver
@@ -280,10 +280,10 @@ public:
     /// \brief Values to be passed to setPower() to control the transmitter power
     ///
     typedef enum {
-        Power22dBm = RH_E220_PARAM_OPT1_POWER_22DBM,
-        Power17dBm = RH_E220_PARAM_OPT1_POWER_17DBM,
-        Power13dBm = RH_E220_PARAM_OPT1_POWER_13DBM,
-        Power10dBm = RH_E220_PARAM_OPT1_POWER_10DBM,
+        Power22dBm = RH_E220_PARAM_OPT1_POWER_22,
+        Power17dBm = RH_E220_PARAM_OPT1_POWER_17,
+        Power13dBm = RH_E220_PARAM_OPT1_POWER_13,
+        Power10dBm = RH_E220_PARAM_OPT1_POWER_10,
     } PowerLevel;
 
     /// Sets the transmitter power output
@@ -298,10 +298,10 @@ public:
     /// \brief Values to be passed to setSubPacket() to control the sub-packet settings
     ///
     typedef enum {
-        SubPacket200B = RH_E220_PARAM_OPT1_SUBPKT_200B,
-        SubPacket128B = RH_E220_PARAM_OPT1_SUBPKT_128B,
-        SubPacket64B = RH_E220_PARAM_OPT1_SUBPKT_64B,
-        SubPacket32B = RH_E220_PARAM_OPT1_SUBPKT_32B,
+        SubPacket200B = RH_E220_PARAM_OPT1_SUBPKT_200,
+        SubPacket128B = RH_E220_PARAM_OPT1_SUBPKT_128,
+        SubPacket64B = RH_E220_PARAM_OPT1_SUBPKT_64,
+        SubPacket32B = RH_E220_PARAM_OPT1_SUBPKT_32,
     } SubPacketLen;
 
     bool setSubPacket(SubPacketLen len);
