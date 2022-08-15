@@ -2,21 +2,7 @@
 #define RH_E220_H
 
 #include <RHGenericDriver.h>
-
-#if (RH_PLATFORM == RH_PLATFORM_STM32F2)
-#define HardwareSerial USARTSerial
-#elif defined (ARDUINO_ARCH_STM32F4)
-#include <libmaple/HardwareSerial.h>
-#elif (RH_PLATFORM == RH_PLATFORM_ATTINY_MEGA)
-#include <UART.h>
-#elif (RH_PLATFORM == RH_PLATFORM_ARDUINO) && defined(ARDUINO_attinyxy6)
-// AT Tiny Mega 3216 etc
-#define HardwareSerial UartClass
-#else
-
-#include <HardwareSerial.h>
-
-#endif
+#include <Stream.h>
 
 // Commands to alter module behaviour
 #define RH_E220_COMMAND_WRITE_PARAMS_SAVE         0xC0
@@ -49,11 +35,11 @@
 #define RH_E220_PARAM_SPED_DATARATE_38400BPS      0x06
 #define RH_E220_PARAM_SPED_DATARATE_62500BPS      0x07
 
-#define RH_E220_PARAM_OPT1_SUB_PKT_MASK           0xC0
-#define RH_E220_PARAM_OPT1_SUB_PKT_200B           0x00
-#define RH_E220_PARAM_OPT1_SUB_PKT_128B           0x40
-#define RH_E220_PARAM_OPT1_SUB_PKT_64B            0x80
-#define RH_E220_PARAM_OPT1_SUB_PKT_32B            0xC0
+#define RH_E220_PARAM_OPT1_SUBPKT_MASK            0xC0
+#define RH_E220_PARAM_OPT1_SUBPKT_200B            0x00
+#define RH_E220_PARAM_OPT1_SUBPKT_128B            0x40
+#define RH_E220_PARAM_OPT1_SUBPKT_64B             0x80
+#define RH_E220_PARAM_OPT1_SUBPKT_32B             0xC0
 
 #define RH_E220_PARAM_OPT1_POWER_MASK             0x03
 #define RH_E220_PARAM_OPT1_POWER_22DBM            0x00
@@ -69,6 +55,7 @@
 #define DLE 0x10
 #define SYN 0x16
 
+// TODO: Framing ?
 // Maximum message length (including the headers) we are willing to support
 #define RH_E220_MAX_PAYLOAD_LEN 200
 
@@ -85,7 +72,7 @@
 // It is an arbitrary limit.
 // Can be pre-defined to a smaller size (to save SRAM) prior to including this header
 // Here we allow for 4 bytes of address and header and payload to be included in the 64 byte encryption limit.
-// the one byte payload length is not encrpyted
+// the one byte payload length is not encrypted
 #ifndef RH_E220_MAX_MESSAGE_LEN
 #define RH_E220_MAX_MESSAGE_LEN (RH_E220_MAX_PAYLOAD_LEN - RH_E220_TARGET_LEN -\
     RH_E220_DLESTX_LEN - RH_E220_HEADER_LEN - RH_E220_DLEETX_LEN - RH_E220_FCS_LEN)
@@ -97,7 +84,7 @@
 /// \brief Driver to send and receive unaddressed, unreliable datagrams via a stream connection
 ///
 /// This class sends and received packetized messages over a stream connection.
-/// It can be used for point-to-point or multidrop, RS232, RS488 or other stream connections as
+/// It can be used for point-to-point or multi-drop, RS232, RS488 or other stream connections as
 /// supported by your controller hardware.
 /// It can also be used to communicate via radios with stream interfaces such as:
 /// - APC220 Radio Data Module http://www.dfrobot.com/image/data/TEL0005/APC220_Datasheet.pdf
@@ -106,7 +93,7 @@
 /// - HopeRF HM-TR module http://www.hoperf.com/upload/rf_app/HM-TRS.pdf
 /// - Others
 ///
-/// Compiles and runs on Linux, OSX and all the microprocessers and MCUs suported by
+/// Compiles and runs on Linux, OSX and all the microprocessors and MCUs supported by
 /// radiohead. On Linux and OSX, a RadioHead specific version of HardwareSerial (in RHutil/HardwareSerial.*)
 /// encapsulates access to any serial port (or suported USB-stream converter)
 ///
@@ -198,12 +185,8 @@
 class RH_E220 : public RHGenericDriver {
 public:
     /// Constructor
-    /// \param[in] serial Reference to the HardwareSerial port which will be used by this instance.
-    RH_E220(HardwareSerial &serial, uint8_t m0Pin, uint8_t m1Pin, uint8_t auxPin);
-
-    /// Return the HardwareSerial port in use by this instance
-    /// \return The current HardwareSerial as a reference
-    HardwareSerial &serial();
+    /// \param[in] stream Reference to the Stream which will be used by this instance.
+    RH_E220(Stream &stream, uint8_t m0Pin, uint8_t m1Pin, uint8_t auxPin);
 
     /// Initialise the Driver transport hardware and software.
     /// Make sure the Driver is properly configured before calling init().
@@ -214,22 +197,6 @@ public:
     /// This can be called multiple times in a timeout loop.
     /// \return true if a new, complete, error-free uncollected message is available to be retreived by recv()
     bool available() override;
-
-    /// Wait until a new message is available from the driver.
-    /// Blocks until a complete message is received as reported by available()
-    /// \param[in] polldelay Time between polling available() in milliseconds. This can be useful
-    /// in multitaking environment like Linux to prevent waitAvailableTimeout
-    /// using all the CPU while polling for receiver activity
-//    virtual void waitAvailable(uint16_t polldelay = 0);
-
-    /// Wait until a new message is available from the driver or the timeout expires.
-    /// Blocks until a complete message is received as reported by available() or the timeout expires.
-    /// \param[in] timeout The maximum time to wait in milliseconds
-    /// \param[in] polldelay Time between polling available() in milliseconds. This can be useful
-    /// in multitaking environment like Linux to prevent waitAvailableTimeout
-    /// using all the CPU while polling for receiver activity
-    /// \return true if a message is available as reported by available(), false on timeout.
-//    virtual bool waitAvailableTimeout(uint16_t timeout, uint16_t polldelay = 0);
 
     /// If there is a valid message available, copy it to buf and return true
     /// else return false.
@@ -252,8 +219,15 @@ public:
     /// Returns the maximum message length 
     /// available in this Driver.
     /// \return The maximum legal message length
-    virtual uint8_t maxMessageLength();
+    uint8_t maxMessageLength() override;
 
+    /// Determine if the currently selected radio channel is active.
+    /// This is expected to be subclassed by specific radios to implement their Channel Activity Detection
+    /// if supported. If the radio does not support CAD, returns true immediately. If a RadioHead radio
+    /// supports isChannelActive() it will be documented in the radio specific documentation.
+    /// This is called automatically by waitCAD().
+    /// \return true if the radio-specific CAD (as returned by override of isChannelActive()) shows the
+    /// current radio channel as active, else false. If there is no radio-specific CAD, returns false.
     bool isChannelActive() override;
 
     /// \brief Values to be passed to setDataRate() to control the on-air data rate
@@ -268,6 +242,9 @@ public:
         DataRate62500bps = RH_E220_PARAM_SPED_DATARATE_62500BPS,
     } DataRate;
 
+    /// Sets the on-air data rate to be used by the transmitter and receiver
+    /// \param[in] rate A valid data rate from the DataRate enum
+    /// \return true if successful
     bool setDataRate(DataRate rate);
 
     /// \brief Values to be passed to setBaudRate() to control the radio stream connection baud rate
@@ -318,13 +295,13 @@ public:
 
     bool setChannel(uint8_t chan);
 
-    /// \brief Values to be passed to setSubPkt() to control the sub-packet settings
+    /// \brief Values to be passed to setSubPacket() to control the sub-packet settings
     ///
     typedef enum {
-        SubPacket200B = RH_E220_PARAM_OPT1_SUB_PKT_200B,
-        SubPacket128B = RH_E220_PARAM_OPT1_SUB_PKT_128B,
-        SubPacket64B = RH_E220_PARAM_OPT1_SUB_PKT_64B,
-        SubPacket32B = RH_E220_PARAM_OPT1_SUB_PKT_32B,
+        SubPacket200B = RH_E220_PARAM_OPT1_SUBPKT_200B,
+        SubPacket128B = RH_E220_PARAM_OPT1_SUBPKT_128B,
+        SubPacket64B = RH_E220_PARAM_OPT1_SUBPKT_64B,
+        SubPacket32B = RH_E220_PARAM_OPT1_SUBPKT_32B,
     } SubPacketLen;
 
     bool setSubPacket(SubPacketLen len);
@@ -341,7 +318,7 @@ protected:
         RxStateWaitFCS2           ///< Waiting for second FCS octet
     } RxState;
 
-    /// \brief Defines values to be passed to setOperatinMode
+    /// \brief Defines values to be passed to setOperatingMode
     ///
     /// For internal driver user only
     typedef enum {
@@ -381,18 +358,17 @@ protected:
     /// \return true if successful
     bool writeParameters(Parameters &params, bool save = false);
 
-    /// HAndle a character received from the stream port. IMplements
-    /// the receiver state machine
+    /// Waits for the AUX pin to go high
+    /// For internal use only
+    void waitAuxHigh() const;
+
+    /// Handle a character received from the stream port. Implements the receiver state machine
     void handleRx(uint8_t ch);
 
     /// Empties the Rx buffer
     void clearRxBuf();
 
-    /// Waits for the AUX pin to go high
-    /// For internal use only
-    void waitAuxHigh() const;
-
-    /// Adds a charater to the Rx buffer
+    /// Adds a character to the Rx buffer
     void appendRxBuf(uint8_t ch);
 
     /// Checks whether the Rx buffer contains valid data that is complete and uncorrupted
@@ -404,7 +380,7 @@ protected:
     void txData(uint8_t ch);
 
     /// Reference to the Stream we will use
-    HardwareSerial &_serial;
+    Stream &_stream;
 
     /// The current state of the Rx state machine
     RxState _rxState;
@@ -427,6 +403,7 @@ protected:
     /// FCS for transmitted data
     uint16_t _txFcs;
 
+private:
     uint8_t _auxPin;
 
     uint8_t _m0Pin;
@@ -438,6 +415,7 @@ protected:
     uint8_t _targetAddl;
 
     uint8_t _targetChan;
+
 };
 
 #endif

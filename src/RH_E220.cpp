@@ -11,8 +11,8 @@
 //    auxRising = true;
 //}
 
-RH_E220::RH_E220(HardwareSerial &serial, uint8_t m0Pin, uint8_t m1Pin, uint8_t auxPin)
-        : _serial(serial),
+RH_E220::RH_E220(Stream &stream, uint8_t m0Pin, uint8_t m1Pin, uint8_t auxPin)
+        : _stream(stream),
           _rxState(RxStateInitialising),
           _auxPin(auxPin),
           _m0Pin(m0Pin),
@@ -26,10 +26,6 @@ RH_E220::RH_E220(HardwareSerial &serial, uint8_t m0Pin, uint8_t m1Pin, uint8_t a
     digitalWrite(_m0Pin, HIGH);
     digitalWrite(_m1Pin, HIGH);
     //attachInterrupt(digitalPinToInterrupt(_auxPin), auxIsr, RISING);
-}
-
-HardwareSerial &RH_E220::serial() {
-    return _serial;
 }
 
 bool RH_E220::init() {
@@ -74,8 +70,8 @@ bool RH_E220::setDataRate(DataRate rate) {
 
 // Call this often
 bool RH_E220::available() {
-    while (!_rxBufValid && _serial.available()) {
-        handleRx(_serial.read());
+    while (!_rxBufValid && _stream.available()) {
+        handleRx(_stream.read());
     }
     return _rxBufValid;
 }
@@ -178,7 +174,7 @@ void RH_E220::appendRxBuf(uint8_t ch) {
         _rxBuf[_rxBufLen++] = ch;
         _rxFcs = RHcrc_ccitt_update(_rxFcs, ch);
     }
-    // If the buffer overflows, we dont record the trailing data, and the FCS will be wrong,
+    // If the buffer overflows, we don't record the trailing data, and the FCS will be wrong,
     // causing the message to be dropped when the FCS is received
 }
 
@@ -227,13 +223,13 @@ bool RH_E220::send(const uint8_t *data, uint8_t len) {
         return false;  // Check channel activity
 
     // Write the target
-    _serial.write(_targetAddh);
-    _serial.write(_targetAddl);
-    _serial.write(_targetChan);
+    _stream.write(_targetAddh);
+    _stream.write(_targetAddl);
+    _stream.write(_targetChan);
 
     _txFcs = 0xffff;    // Initial value
-    _serial.write(DLE); // Not in FCS
-    _serial.write(STX); // Not in FCS
+    _stream.write(DLE); // Not in FCS
+    _stream.write(STX); // Not in FCS
 
     // First the 4 headers
     txData(_txHeaderTo);
@@ -264,22 +260,22 @@ bool RH_E220::send(const uint8_t *data, uint8_t len) {
     //Serial.print('C');
     //Serial.println('C');
 
-    _serial.write(DLE);
+    _stream.write(DLE);
     _txFcs = RHcrc_ccitt_update(_txFcs, DLE);
-    _serial.write(ETX);
+    _stream.write(ETX);
     _txFcs = RHcrc_ccitt_update(_txFcs, ETX);
 
     // Now send the calculated FCS for this message
-    _serial.write((_txFcs >> 8) & 0xff);
-    _serial.write(_txFcs & 0xff);
+    _stream.write((_txFcs >> 8) & 0xff);
+    _stream.write(_txFcs & 0xff);
 
     return true;
 }
 
 void RH_E220::txData(uint8_t ch) {
     if (ch == DLE)    // DLE stuffing required?
-        _serial.write(DLE); // Not in FCS
-    _serial.write(ch);
+        _stream.write(DLE); // Not in FCS
+    _stream.write(ch);
     _txFcs = RHcrc_ccitt_update(_txFcs, ch);
 }
 
@@ -328,13 +324,12 @@ void RH_E220::setOperatingMode(OperatingMode mode) {
 
 bool RH_E220::readParameters(Parameters &params) {
     setOperatingMode(ModeSleep);
-    _serial.begin(RH_E220_CONFIG_BAUD_RATE);
 
     uint8_t readParamsCommand[] = {RH_E220_COMMAND_READ_PARAMS, 0x00, sizeof(params)};
-    _serial.write(readParamsCommand, sizeof(readParamsCommand));
+    _stream.write(readParamsCommand, sizeof(readParamsCommand));
     //printBuffer("COMMAND", readParamsCommand, sizeof(readParamsCommand));
 
-    size_t result = _serial.readBytes(readParamsCommand, sizeof(readParamsCommand));
+    size_t result = _stream.readBytes(readParamsCommand, sizeof(readParamsCommand));
     //printBuffer("RESPONSE", readParamsCommand, sizeof(readParamsCommand));
 
     if (result != sizeof(readParamsCommand) || (
@@ -344,7 +339,7 @@ bool RH_E220::readParameters(Parameters &params) {
         return false;
     }
 
-    result = _serial.readBytes((uint8_t *) &params, sizeof(params));
+    result = _stream.readBytes((uint8_t *) &params, sizeof(params));
     setOperatingMode(ModeNormal);
     //printBuffer("PARAMS", (uint8_t *) &params, sizeof(params));
     return (result == sizeof(Parameters));
@@ -352,22 +347,21 @@ bool RH_E220::readParameters(Parameters &params) {
 
 bool RH_E220::writeParameters(Parameters &params, bool save) {
     setOperatingMode(ModeSleep);
-    _serial.begin(RH_E220_CONFIG_BAUD_RATE);
 
     uint8_t head = save ? RH_E220_COMMAND_WRITE_PARAMS_SAVE : RH_E220_COMMAND_WRITE_PARAMS_NOSAVE;
     uint8_t writeParamsCommand[] = {head, 0x00, sizeof(params)};
     //printBuffer("writing now", (uint8_t*)&params, sizeof(params));
 
-    size_t result = _serial.write(writeParamsCommand, sizeof(writeParamsCommand));
+    size_t result = _stream.write(writeParamsCommand, sizeof(writeParamsCommand));
     if (result != sizeof(writeParamsCommand))
         return false;
 
-    result = _serial.write((uint8_t *) &params, sizeof(params));
+    result = _stream.write((uint8_t *) &params, sizeof(params));
     if (result != sizeof(params))
         return false;
 
     // Now we expect to get the same data back
-    result = _serial.readBytes(writeParamsCommand, sizeof(writeParamsCommand));
+    result = _stream.readBytes(writeParamsCommand, sizeof(writeParamsCommand));
     if (result != sizeof(writeParamsCommand) || (
             writeParamsCommand[0] == 0xFF &&
             writeParamsCommand[1] == 0xFF &&
@@ -375,7 +369,7 @@ bool RH_E220::writeParameters(Parameters &params, bool save) {
         return false;
     }
 
-    result = _serial.readBytes((uint8_t *) &params, sizeof(params));
+    result = _stream.readBytes((uint8_t *) &params, sizeof(params));
     if (result != sizeof(params))
         return false;
 
@@ -428,8 +422,8 @@ bool RH_E220::setSubPacket(SubPacketLen len) {
     Parameters params;
     if (!readParameters(params))
         return false;
-    params.opt1 &= ~RH_E220_PARAM_OPT1_SUB_PKT_MASK;
-    params.opt1 |= (len & RH_E220_PARAM_OPT1_SUB_PKT_MASK);
+    params.opt1 &= ~RH_E220_PARAM_OPT1_SUBPKT_MASK;
+    params.opt1 |= (len & RH_E220_PARAM_OPT1_SUBPKT_MASK);
     return writeParameters(params);
 }
 

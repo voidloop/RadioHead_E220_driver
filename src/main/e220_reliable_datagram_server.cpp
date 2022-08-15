@@ -6,7 +6,7 @@
 // stream port, such as the 3DR Telemetry radio V1 and others).
 // It is designed to work with the other example serial_reliable_datagram_client
 // Tested on Arduino Mega and ChipKit Uno32 (normal Arduinos only have one
-// stream port and so it not possible to test on them and still have debug
+// stream port and so it's not possible to test on them and still have debug
 // output)
 // Tested with Arduino Mega, Teensy 3.1, Moteino, Arduino Due
 // Also works on Linux an OSX. Build and test with:
@@ -25,7 +25,7 @@
 #define M0_PIN 2
 #define M1_PIN 3
 
-RH_E220 driver(Serial1, M0_PIN, M1_PIN, AUX_PIN);
+RH_E220 driver(Serial1, M0_PIN, M1_PIN, AUX_PIN); // NOLINT(cppcoreguidelines-interfaces-global-init)
 
 // Class to manage message delivery and receipt, using the driver declared above
 RHReliableDatagram manager(driver, SERVER_ADDRESS);
@@ -33,23 +33,20 @@ RHReliableDatagram manager(driver, SERVER_ADDRESS);
 void setup()
 {
     Serial.begin(115200);
-    Serial1.begin(9600);
-
     delay(3000);
+
+    Serial.println("Initializing...");
+    Serial1.begin(RH_E220_CONFIG_BAUD_RATE);
 
 //    driver.setPower(RH_E220::Power22dBm);
 //    driver.setAddress(0x03, 0x03);
 //    driver.setChannel(0x15);
 //    driver.setBaudRate();
 
-    Serial.println("Initializing...");
-
     driver.setTarget(0x1,0x1,0x16);
 
     if (!manager.init())
-        Serial.println("init failed");
-
-    manager.setTimeout(2000);
+        Serial.println("Failed");
 
 //    Serial.println("loop");
 //    while (true) {
@@ -59,13 +56,12 @@ void setup()
 //        }
 //    }
 
+    manager.setTimeout(2000);
     Serial.println("Done");
-
-//  manager.setTimeout(2000); // Might need this at slow data rates or if a radio is involved
 }
 
 uint8_t data[] = "And hello back to you";
-// Dont put this on the stack:
+// Don't put this on the stack
 uint8_t buf[RH_E220_MAX_MESSAGE_LEN];
 
 void loop()
