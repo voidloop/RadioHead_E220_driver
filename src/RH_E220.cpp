@@ -307,7 +307,8 @@ void RH_E220::setOperatingMode(OperatingMode mode) {
             break;
     }
     waitAuxHigh();
-    delay(50); // Takes a little while to start its response
+    // I don't understand this delay... how much?
+    delay(500); // Takes a little while to start its response
 }
 
 bool RH_E220::readParameters(Parameters &params) {

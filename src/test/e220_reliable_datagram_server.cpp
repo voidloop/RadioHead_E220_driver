@@ -28,7 +28,7 @@ void setup()
     driver.setChannel(0x16);
 //    driver.setBaudRate();
 
-    driver.setTarget(0x1,0x1,0x15);
+    driver.setTarget(0xFF,0xFF,0x15);
 
     if (!manager.init())
         Serial.println("Failed");
