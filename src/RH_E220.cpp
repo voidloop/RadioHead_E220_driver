@@ -37,7 +37,7 @@ bool RH_E220::init() {
 
     Parameters params;
     readParameters(params);
-    //printBuffer("PARAMS", (uint8_t *) &params, sizeof(params));
+    printBuffer("PARAMS", (uint8_t *) &params, sizeof(params));
 
     setCADTimeout(1000);
     return true;
@@ -319,7 +319,7 @@ void RH_E220::setOperatingMode(OperatingMode mode) {
             break;
     }
     waitAuxHigh();
-    delay(20); // Takes a little while to start its response
+    delay(50); // Takes a little while to start its response
 }
 
 bool RH_E220::readParameters(Parameters &params) {
