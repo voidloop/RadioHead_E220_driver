@@ -72,12 +72,11 @@
 // +-----+-----+---------+------+-----+-----+-----+
 // | DLE | STX | HEADER  | MSG  | DLE | ETX | FCS |
 // +-----+-----+---------+------+-----+-----+-----+
-// | 1   | 1   | 4       | ?    | 1   | 1   | 2   |
+// | 1   | 1   | 4       | 187  | 1   | 1   | 2   |
 // +-----+-----+---------+------+-----+-----+-----+
 
 #define RH_E220_PACKET_LEN        RH_E220_PARAM_OPT1_PACKET_LEN_200
-#define RH_E220_MAX_PAYLOAD_LEN   197 // The first 3 octets are the target
-#define RH_E220_FRAME_SIZE        6
+#define RH_E220_MAX_PAYLOAD_LEN   191 // HEADER + MSG
 
 // This is the maximum message length that can be supported by this library.
 // It is an arbitrary limit.
@@ -85,7 +84,7 @@
 // Here we allow for 4 bytes of address and header and payload to be included in the 64 byte encryption limit.
 // the one byte payload length is not encrypted
 #ifndef RH_E220_MAX_MESSAGE_LEN
-#define RH_E220_MAX_MESSAGE_LEN (RH_E220_MAX_PAYLOAD_LEN - RH_E220_HEADER_LEN - RH_E220_FRAME_SIZE)
+#define RH_E220_MAX_MESSAGE_LEN (RH_E220_MAX_PAYLOAD_LEN - RH_E220_HEADER_LEN)
 #endif
 
 /////////////////////////////////////////////////////////////////////
@@ -312,7 +311,7 @@ private:
     uint16_t _rxRecdFcs;
 
     /// The Rx buffer
-    uint8_t _rxBuf[RH_E220_MAX_MESSAGE_LEN];
+    uint8_t _rxBuf[RH_E220_MAX_PAYLOAD_LEN];
 
     /// Current length of data in the Rx buffer
     uint8_t _rxBufLen;

@@ -18,7 +18,7 @@ RH_E220::RH_E220(Stream &stream, uint8_t m0Pin, uint8_t m1Pin, uint8_t auxPin)
           _m0Pin(m0Pin),
           _m1Pin(m1Pin),
           _target({0xFF, 0xFF, 0x00}) {
-    pinMode(_auxPin, INPUT_PULLUP);
+    pinMode(_auxPin, INPUT);
     pinMode(_m0Pin, OUTPUT);
     pinMode(_m1Pin, OUTPUT);
     digitalWrite(_m0Pin, HIGH);
@@ -65,20 +65,13 @@ bool RH_E220::available() {
 void RH_E220::waitAuxHigh() const {
     // REVISIT: timeout needed?
     while (digitalRead(_auxPin) == LOW);
-//    while (!auxRising) {
-//        Serial.print(_auxPin); Serial.print(": ");
-//        Serial.println(digitalRead(_auxPin));
-//    }
 }
 
 void RH_E220::handleRx(uint8_t ch) {
-    //static int i = 0;
-
     // State machine for receiving chars
     switch (_rxState) {
         case RxStateIdle: {
             if (ch == DLE) {
-                //Serial.print('D');
                 _rxState = RxStateDLE;
             }
         }
@@ -86,7 +79,6 @@ void RH_E220::handleRx(uint8_t ch) {
 
         case RxStateDLE: {
             if (ch == STX) {
-                //Serial.print('S'); i = 0;
                 clearRxBuf();
                 _rxState = RxStateData;
             } else {
@@ -97,14 +89,8 @@ void RH_E220::handleRx(uint8_t ch) {
 
         case RxStateData: {
             if (ch == DLE) {
-                //Serial.print('D');
                 _rxState = RxStateEscape;
             } else {
-                //if (i == 2)
-                //  Serial.print((uint8_t) ch);
-                //else {
-                //  Serial.print('x'); i++;
-                //}
                 appendRxBuf(ch);
             }
         }
@@ -112,31 +98,26 @@ void RH_E220::handleRx(uint8_t ch) {
 
         case RxStateEscape: {
             if (ch == ETX) {
-                //Serial.print('E');
                 // add fcs for DLE, ETX
                 _rxFcs = RHcrc_ccitt_update(_rxFcs, DLE);
                 _rxFcs = RHcrc_ccitt_update(_rxFcs, ETX);
                 _rxState = RxStateWaitFCS1; // End frame
             } else if (ch == DLE) {
-                //Serial.print('x');
                 appendRxBuf(ch);
                 _rxState = RxStateData;
             } else {
-                //Serial.print('U');
                 _rxState = RxStateIdle; // Unexpected
             }
         }
             break;
 
         case RxStateWaitFCS1: {
-            //Serial.print('C');
             _rxRecdFcs = ch << 8;
             _rxState = RxStateWaitFCS2;
         }
             break;
 
         case RxStateWaitFCS2: {
-            //Serial.println('C');
             _rxRecdFcs |= ch;
             _rxState = RxStateIdle;
             validateRxBuf();
@@ -146,22 +127,6 @@ void RH_E220::handleRx(uint8_t ch) {
         default: // Else some compilers complain
             break;
     }
-}
-
-void RH_E220::clearRxBuf() {
-    _rxBufValid = false;
-    _rxFcs = 0xffff;
-    _rxBufLen = 0;
-}
-
-void RH_E220::appendRxBuf(uint8_t ch) {
-    if (_rxBufLen < RH_E220_MAX_PAYLOAD_LEN) {
-        // Normal data, save and add to FCS
-        _rxBuf[_rxBufLen++] = ch;
-        _rxFcs = RHcrc_ccitt_update(_rxFcs, ch);
-    }
-    // If the buffer overflows, we don't record the trailing data, and the FCS will be wrong,
-    // causing the message to be dropped when the FCS is received
 }
 
 // Check whether the latest received message is complete and uncorrupted
@@ -182,6 +147,22 @@ void RH_E220::validateRxBuf() {
         _rxGood++;
         _rxBufValid = true;
     }
+}
+
+void RH_E220::appendRxBuf(uint8_t ch) {
+    if (_rxBufLen < RH_E220_MAX_PAYLOAD_LEN) {
+        // Normal data, save and add to FCS
+        _rxBuf[_rxBufLen++] = ch;
+        _rxFcs = RHcrc_ccitt_update(_rxFcs, ch);
+    }
+    // If the buffer overflows, we don't record the trailing data, and the FCS will be wrong,
+    // causing the message to be dropped when the FCS is received
+}
+
+void RH_E220::clearRxBuf() {
+    _rxBufValid = false;
+    _rxFcs = 0xffff;
+    _rxBufLen = 0;
 }
 
 bool RH_E220::recv(uint8_t *buf, uint8_t *len) {
@@ -225,28 +206,11 @@ bool RH_E220::send(const uint8_t *data, uint8_t len) {
     txData(_txHeaderId);
     txData(_txHeaderFlags);
 
-    //Serial.print(_targetAddh, HEX); Serial.print(' ');
-    //Serial.print(_targetAddl, HEX); Serial.print(' ');
-    //Serial.print(_targetChan, HEX); Serial.print(' ');
-    //Serial.print('D');
-    //Serial.print('S');
-    //Serial.print('H');
-    //Serial.print('H');
-    //Serial.print(_txHeaderId);
-    //Serial.print('H');
-
     // Now the payload
     while (len) {
         txData(*data++);
         len--;
-        //Serial.print('x');
     }
-
-    // End of message
-    //Serial.print('D');
-    //Serial.print('E');
-    //Serial.print('C');
-    //Serial.println('C');
 
     _stream.write(DLE);
     _txFcs = RHcrc_ccitt_update(_txFcs, DLE);

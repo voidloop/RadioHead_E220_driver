@@ -45,7 +45,7 @@ void setup()
     Serial.println("Done");
 }
 
-uint8_t data[] = "And hello back to you";
+uint8_t data[] = "PONG!";
 // Don't put this on the stack
 uint8_t buf[RH_E220_MAX_MESSAGE_LEN];
 
@@ -65,8 +65,9 @@ void loop()
         Serial.println((char*)buf);
 
         // Send a reply back to the originator client
-        if (!manager.sendtoWait(data, sizeof(data), from))
+        if (!manager.sendtoWait(data, sizeof(data), from)) {
             Serial.println("sendtoWait failed");
+        }
     }
 }
 

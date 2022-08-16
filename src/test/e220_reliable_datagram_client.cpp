@@ -15,8 +15,6 @@ RH_E220 driver(Serial1, M0_PIN, M1_PIN, AUX_PIN); // NOLINT(cppcoreguidelines-in
 // Class to manage message delivery and receipt, using the driver declared above
 RHReliableDatagram manager(driver, CLIENT_ADDRESS);
 
-uint8_t data[RH_E220_MAX_MESSAGE_LEN] = {};
-
 void setup() {
     Serial.begin(115200);
 
@@ -31,12 +29,8 @@ void setup() {
 
     driver.setChannel(0x15);
 
-
     if (!manager.init())
         Serial.println("Failed");
-
-    for (uint8_t &i: data)
-        i = 'A';
 
     Serial.println("Done");
 
@@ -46,6 +40,9 @@ void setup() {
     // It seems a good timeout for this experiment
     manager.setTimeout(2000);
 }
+
+uint8_t data[RH_E220_MAX_MESSAGE_LEN] = "PING";
+
 
 // Don't put this on the stack
 uint8_t buf[RH_E220_MAX_MESSAGE_LEN];
