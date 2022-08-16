@@ -12,11 +12,6 @@
 #define RH_E220_COMMAND_RESET                     0xC4
 
 // Various flags and masks for param bytes
-#define RH_E220_PARAM_SPED_UART_MODE_MASK         0x18
-#define RH_E220_PARAM_SPED_UART_MODE_8N1          0x00
-#define RH_E220_PARAM_SPED_UART_MODE_8O1          0x08
-#define RH_E220_PARAM_SPED_UART_MODE_8E1          0x18
-
 #define RH_E220_PARAM_SPED_UART_BAUD_MASK         0xE0
 #define RH_E220_PARAM_SPED_UART_BAUD_1200         0x00
 #define RH_E220_PARAM_SPED_UART_BAUD_2400         0x20
@@ -26,6 +21,11 @@
 #define RH_E220_PARAM_SPED_UART_BAUD_38400        0xA0
 #define RH_E220_PARAM_SPED_UART_BAUD_57600        0xC0
 #define RH_E220_PARAM_SPED_UART_BAUD_115200       0xE0
+
+#define RH_E220_PARAM_SPED_UART_MODE_MASK         0x18
+#define RH_E220_PARAM_SPED_UART_MODE_8N1          0x00
+#define RH_E220_PARAM_SPED_UART_MODE_8O1          0x08
+#define RH_E220_PARAM_SPED_UART_MODE_8E1          0x18
 
 #define RH_E220_PARAM_SPED_DATA_RATE_MASK         0x07
 #define RH_E220_PARAM_SPED_DATA_RATE_2400         0x02
@@ -41,14 +41,45 @@
 #define RH_E220_PARAM_OPT1_PACKET_LEN_64          0x80
 #define RH_E220_PARAM_OPT1_PACKET_LEN_32          0xC0
 
-#define RH_E220_PARAM_OPT1_POWER_MASK             0x03
-#define RH_E220_PARAM_OPT1_POWER_22               0x00
-#define RH_E220_PARAM_OPT1_POWER_17               0x01
-#define RH_E220_PARAM_OPT1_POWER_13               0x02
-#define RH_E220_PARAM_OPT1_POWER_10               0x03
+#define RH_E220_PARAM_OPT1_RSSI_NOISE_MASK        0x20
+#define RH_E220_PARAM_OPT1_RSSI_NOISE_DISABLE     0x00
+#define RH_E220_PARAM_OPT1_RSSI_NOISE_ENABLE      0x20
+
+#define RH_E220_PARAM_OPT1_TX_POWER_MASK          0x03
+#define RH_E220_PARAM_OPT1_TX_POWER_22            0x00
+#define RH_E220_PARAM_OPT1_TX_POWER_17            0x01
+#define RH_E220_PARAM_OPT1_TX_POWER_13            0x02
+#define RH_E220_PARAM_OPT1_TX_POWER_10            0x03
+
+#define RH_E220_PARAM_OPT2_RSSI_BYTE_MASK         0x80
+#define RH_E220_PARAM_OPT2_RSSI_BYTE_DISABLE      0x00
+#define RH_E220_PARAM_OPT2_RSSI_BYTE_ENABLE       0x80
+
+#define RH_E220_PARAM_OPT2_TX_METHOD_MASK         0x60
+#define RH_E220_PARAM_OPT2_TX_METHOD_TRANSPARENT  0x00
+#define RH_E220_PARAM_OPT2_TX_METHOD_FIXED        0x60
+
+#define RH_E220_PARAM_OPT2_LTB_MASK               0x10
+#define RH_E220_PARAM_OPT2_LTB_DISABLE            0x00
+#define RH_E220_PARAM_OPT2_LTB_ENABLE             0x10
+
+#define RH_E220_PARAM_OPT2_WOR_CYCLE_MASK         0x07
+#define RH_E220_PARAM_OPT2_WOR_CYCLE_500          0x00
+#define RH_E220_PARAM_OPT2_WOR_CYCLE_1000         0x01
+#define RH_E220_PARAM_OPT2_WOR_CYCLE_1500         0x02
+#define RH_E220_PARAM_OPT2_WOR_CYCLE_2000         0x03
+#define RH_E220_PARAM_OPT2_WOR_CYCLE_2500         0x04
+#define RH_E220_PARAM_OPT2_WOR_CYCLE_3000         0x05
+#define RH_E220_PARAM_OPT2_WOR_CYCLE_3500         0x06
+#define RH_E220_PARAM_OPT2_WOR_CYCLE_4000         0x07
+
+// Reserved for what?
+#define RH_E220_PARAM_OPT1_RESERVED_MASK          0x1C
+#define RH_E220_PARAM_OPT2_RESERVED_MASK          0x28
+
 
 // Defaults, set in init()
-#define RH_E220_DEFAULT_POWER       RH_E220_PARAM_OPT1_POWER_10
+#define RH_E220_DEFAULT_POWER       RH_E220_PARAM_OPT1_TX_POWER_10
 #define RH_E220_DEFAULT_DATA_RATE   RH_E220_PARAM_SPED_DATA_RATE_2400
 #define RH_E220_DEFAULT_UART_MODE   RH_E220_PARAM_SPED_UART_MODE_8N1
 #define RH_E220_DEFAULT_UART_BAUD   RH_E220_PARAM_SPED_UART_BAUD_9600
@@ -206,10 +237,10 @@ public:
     /// \brief Values to be passed to setPower() to control the transmitter power
     ///
     typedef enum {
-        Power22dBm = RH_E220_PARAM_OPT1_POWER_22,
-        Power17dBm = RH_E220_PARAM_OPT1_POWER_17,
-        Power13dBm = RH_E220_PARAM_OPT1_POWER_13,
-        Power10dBm = RH_E220_PARAM_OPT1_POWER_10,
+        Power22dBm = RH_E220_PARAM_OPT1_TX_POWER_22,
+        Power17dBm = RH_E220_PARAM_OPT1_TX_POWER_17,
+        Power13dBm = RH_E220_PARAM_OPT1_TX_POWER_13,
+        Power10dBm = RH_E220_PARAM_OPT1_TX_POWER_10,
     } PowerLevel;
 
     /// Sets the transmitter power output

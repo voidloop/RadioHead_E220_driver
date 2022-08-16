@@ -38,11 +38,20 @@ bool RH_E220::init() {
 
     bool write = false;
 
-    write |= updateRegister(params.opt1, RH_E220_PACKET_LEN, RH_E220_PARAM_OPT1_PACKET_LEN_MASK);
-    write |= updateRegister(params.opt1, RH_E220_DEFAULT_POWER, RH_E220_PARAM_OPT1_POWER_MASK);
     write |= updateRegister(params.sped, RH_E220_DEFAULT_UART_BAUD, RH_E220_PARAM_SPED_UART_BAUD_MASK);
     write |= updateRegister(params.sped, RH_E220_DEFAULT_UART_MODE, RH_E220_PARAM_SPED_UART_MODE_MASK);
     write |= updateRegister(params.sped, RH_E220_DEFAULT_DATA_RATE, RH_E220_PARAM_SPED_DATA_RATE_MASK);
+    write |= updateRegister(params.opt1, RH_E220_PACKET_LEN, RH_E220_PARAM_OPT1_PACKET_LEN_MASK);
+    write |= updateRegister(params.opt1, RH_E220_PARAM_OPT1_RSSI_NOISE_DISABLE, RH_E220_PARAM_OPT1_RSSI_NOISE_MASK);
+    write |= updateRegister(params.opt1, RH_E220_DEFAULT_POWER, RH_E220_PARAM_OPT1_TX_POWER_MASK);
+    write |= updateRegister(params.opt2, RH_E220_PARAM_OPT2_RSSI_BYTE_DISABLE, RH_E220_PARAM_OPT2_RSSI_BYTE_MASK);
+    write |= updateRegister(params.opt2, RH_E220_PARAM_OPT2_TX_METHOD_FIXED, RH_E220_PARAM_OPT2_TX_METHOD_MASK);
+    write |= updateRegister(params.opt2, RH_E220_PARAM_OPT2_LTB_DISABLE, RH_E220_PARAM_OPT2_LTB_MASK);
+    write |= updateRegister(params.opt2, RH_E220_PARAM_OPT2_WOR_CYCLE_2000, RH_E220_PARAM_OPT2_WOR_CYCLE_MASK);
+
+    // Clear reserved bits ?
+//    write |= updateRegister(params.opt1, (uint8_t)0, RH_E220_PARAM_OPT1_RESERVED_MASK);
+//    write |= updateRegister(params.opt2, (uint8_t)0, RH_E220_PARAM_OPT2_RESERVED_MASK); // ??
 
     if (write && !writeParameters(params, true)) {
         return false;
@@ -64,7 +73,7 @@ bool RH_E220::available() {
 
 void RH_E220::waitAuxHigh() const {
     // REVISIT: timeout needed?
-    while (digitalRead(_auxPin) == LOW);
+    while (digitalRead(_auxPin) == LOW) Serial.println("LOW");
 }
 
 void RH_E220::handleRx(uint8_t ch) {
@@ -357,8 +366,8 @@ bool RH_E220::setPower(PowerLevel level) {
     Parameters params;
     if (!readParameters(params))
         return false;
-    params.opt1 &= ~RH_E220_PARAM_OPT1_POWER_MASK;
-    params.opt1 |= (level & RH_E220_PARAM_OPT1_POWER_MASK);
+    params.opt1 &= ~RH_E220_PARAM_OPT1_TX_POWER_MASK;
+    params.opt1 |= (level & RH_E220_PARAM_OPT1_TX_POWER_MASK);
     return writeParameters(params);
 }
 

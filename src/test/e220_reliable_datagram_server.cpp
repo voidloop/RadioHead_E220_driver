@@ -33,7 +33,7 @@ void setup()
     if (!manager.init())
         Serial.println("Failed");
 
-//    Serial.println("loop");
+    Serial.println("loop");
 //    while (true) {
 //        while (Serial1.available()) {
 //            Serial.print(Serial1.read());
