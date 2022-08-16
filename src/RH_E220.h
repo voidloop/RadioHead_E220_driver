@@ -13,8 +13,8 @@
 
 // Various flags and masks for param bytes
 #define RH_E220_PARAM_SPED_UART_MODE_MASK         0x18
-#define RH_E220_PARAM_SPED_UART_MODE_8N1          0x08
-#define RH_E220_PARAM_SPED_UART_MODE_8O1          0x10
+#define RH_E220_PARAM_SPED_UART_MODE_8N1          0x00
+#define RH_E220_PARAM_SPED_UART_MODE_8O1          0x08
 #define RH_E220_PARAM_SPED_UART_MODE_8E1          0x18
 
 #define RH_E220_PARAM_SPED_UART_BAUD_MASK         0xE0
@@ -27,19 +27,19 @@
 #define RH_E220_PARAM_SPED_UART_BAUD_57600        0xC0
 #define RH_E220_PARAM_SPED_UART_BAUD_115200       0xE0
 
-#define RH_E220_PARAM_SPED_DATARATE_MASK          0x07
-#define RH_E220_PARAM_SPED_DATARATE_2400          0x02
-#define RH_E220_PARAM_SPED_DATARATE_4800          0x03
-#define RH_E220_PARAM_SPED_DATARATE_9600          0x04
-#define RH_E220_PARAM_SPED_DATARATE_19200         0x05
-#define RH_E220_PARAM_SPED_DATARATE_38400         0x06
-#define RH_E220_PARAM_SPED_DATARATE_62500         0x07
+#define RH_E220_PARAM_SPED_DATA_RATE_MASK         0x07
+#define RH_E220_PARAM_SPED_DATA_RATE_2400         0x02
+#define RH_E220_PARAM_SPED_DATA_RATE_4800         0x03
+#define RH_E220_PARAM_SPED_DATA_RATE_9600         0x04
+#define RH_E220_PARAM_SPED_DATA_RATE_19200        0x05
+#define RH_E220_PARAM_SPED_DATA_RATE_38400        0x06
+#define RH_E220_PARAM_SPED_DATA_RATE_62500        0x07
 
-#define RH_E220_PARAM_OPT1_SUBPKT_MASK            0xC0
-#define RH_E220_PARAM_OPT1_SUBPKT_200             0x00
-#define RH_E220_PARAM_OPT1_SUBPKT_128             0x40
-#define RH_E220_PARAM_OPT1_SUBPKT_64              0x80
-#define RH_E220_PARAM_OPT1_SUBPKT_32              0xC0
+#define RH_E220_PARAM_OPT1_PACKET_LEN_MASK        0xC0
+#define RH_E220_PARAM_OPT1_PACKET_LEN_200         0x00
+#define RH_E220_PARAM_OPT1_PACKET_LEN_128         0x40
+#define RH_E220_PARAM_OPT1_PACKET_LEN_64          0x80
+#define RH_E220_PARAM_OPT1_PACKET_LEN_32          0xC0
 
 #define RH_E220_PARAM_OPT1_POWER_MASK             0x03
 #define RH_E220_PARAM_OPT1_POWER_22               0x00
@@ -47,7 +47,13 @@
 #define RH_E220_PARAM_OPT1_POWER_13               0x02
 #define RH_E220_PARAM_OPT1_POWER_10               0x03
 
-#define RH_E220_CONFIG_BAUD_RATE 9600
+// Defaults, set in init()
+#define RH_E220_DEFAULT_POWER       RH_E220_PARAM_OPT1_POWER_10
+#define RH_E220_DEFAULT_DATA_RATE   RH_E220_PARAM_SPED_DATA_RATE_2400
+#define RH_E220_DEFAULT_UART_MODE   RH_E220_PARAM_SPED_UART_MODE_8N1
+#define RH_E220_DEFAULT_UART_BAUD   RH_E220_PARAM_SPED_UART_BAUD_9600
+
+#define RH_E220_CONFIG_UART_BAUD    9600
 
 // Special characters
 #define STX 0x02
@@ -55,58 +61,42 @@
 #define DLE 0x10
 #define SYN 0x16
 
-// TODO: Framing ?
-// Maximum message length (including the headers) we are willing to support
-#define RH_E220_MAX_PAYLOAD_LEN 200
 
 // The length of the headers we add.
 // The headers are inside the payload and are therefore protected by the FCS
 #define RH_E220_HEADER_LEN 4
 
-#define RH_E220_TARGET_LEN 3
-#define RH_E220_DLESTX_LEN 2
-#define RH_E220_DLEETX_LEN 2
-#define RH_E220_FCS_LEN 2
+// Maximum message length of the packet that can be supported by this driver.
+// +-----------+----------------+-----------------+
+// | FRAME     | PAYLOAD        | FRAME           |
+// +-----+-----+---------+------+-----+-----+-----+
+// | DLE | STX | HEADER  | MSG  | DLE | ETX | FCS |
+// +-----+-----+---------+------+-----+-----+-----+
+// | 1   | 1   | 4       | ?    | 1   | 1   | 2   |
+// +-----+-----+---------+------+-----+-----+-----+
 
-// This is the maximum message length that can be supported by this library. 
+#define RH_E220_PACKET_LEN        RH_E220_PARAM_OPT1_PACKET_LEN_200
+#define RH_E220_MAX_PAYLOAD_LEN   197 // The first 3 octets are the target
+#define RH_E220_FRAME_SIZE        6
+
+// This is the maximum message length that can be supported by this library.
 // It is an arbitrary limit.
 // Can be pre-defined to a smaller size (to save SRAM) prior to including this header
 // Here we allow for 4 bytes of address and header and payload to be included in the 64 byte encryption limit.
 // the one byte payload length is not encrypted
 #ifndef RH_E220_MAX_MESSAGE_LEN
-#define RH_E220_MAX_MESSAGE_LEN (RH_E220_MAX_PAYLOAD_LEN - RH_E220_TARGET_LEN -\
-    RH_E220_DLESTX_LEN - RH_E220_HEADER_LEN - RH_E220_DLEETX_LEN - RH_E220_FCS_LEN)
+#define RH_E220_MAX_MESSAGE_LEN (RH_E220_MAX_PAYLOAD_LEN - RH_E220_HEADER_LEN - RH_E220_FRAME_SIZE)
 #endif
-
 
 /////////////////////////////////////////////////////////////////////
 /// \class RH_E220 RH_E220.h <RH_E220.h>
 /// \brief Driver to send and receive unaddressed, unreliable datagrams via a stream connection
 ///
-/// This class sends and received packetized messages over a stream connection.
-/// It can be used for point-to-point or multi-drop, RS232, RS488 or other stream connections as
-/// supported by your controller hardware.
-/// It can also be used to communicate via radios with stream interfaces such as:
-/// - APC220 Radio Data Module http://www.dfrobot.com/image/data/TEL0005/APC220_Datasheet.pdf
-///   http://www.dfrobot.com/image/data/TEL0005/APC220_Datasheet.pdf
-/// - 3DR Telemetry Radio https://store.3drobotics.com/products/3dr-radio
-/// - HopeRF HM-TR module http://www.hoperf.com/upload/rf_app/HM-TRS.pdf
-/// - Others
-///
-/// Compiles and runs on Linux, OSX and all the microprocessors and MCUs supported by
-/// radiohead. On Linux and OSX, a RadioHead specific version of HardwareSerial (in RHutil/HardwareSerial.*)
-/// encapsulates access to any serial port (or suported USB-stream converter)
-///
-/// The packetised messages include message encapsulation, headers, a message payload and a checksum.
-/// It therefore can support robust binary message passing with error-detection and retransmission
-/// when used with the appropriate manager. This allows reliable stream communicaitons even over very long
-/// lines where noise might otherwise affect reliablity of the communications.
-///
 /// \par Packet Format
 ///
 /// All messages sent and received by this RH_E220 Driver conform to this packet format:
 /// \code
-/// DLE 
+/// DLE
 /// STX
 /// TO Header                (1 octet)
 /// FROM Header              (1 octet)
@@ -118,70 +108,7 @@
 /// Frame Check Sequence FCS CCITT CRC-16 (2 octets)
 /// \endcode
 ///
-/// If any of octets from TO header through to the end of the payload are a DLE, 
-/// then they are preceded by a DLE (ie DLE stuffing).
-/// The FCS covers everything from the TO header to the ETX inclusive, but not any stuffed DLEs
-///
-/// \par Physical connection
-///
-/// The physical connection to your stream port will depend on the type of platform you are on.
-///
-/// For example, many arduinos only support a single Serial port on pins 0 and 1, 
-/// which is shared with the USB host connections. On such Arduinos, it is not possible to use both 
-/// RH_E220 on the Serial port as well as using the Serial port for debugand other printing or communications.
-/// 
-/// On Arduino Mega and Due, there are 4 stream ports:
-/// - Serial: this is the stream port connected to the USB interface and the programming host.
-/// - Serial1: on pins 18 (Tx) and 19 (Rx)
-/// - Serial2: on pins 16 (Tx) and 17 (Rx)
-/// - Serial3: on pins 14 (Tx) and 15 (Rx)
-///
-/// On Uno32, there are 2 stream ports:
-/// - SerialUSB: this is the port for the USB host connection.
-/// - Serial1: on pins 39 (Rx) and 40 (Tx) 
-///
-/// On Maple and Flymaple, there are 4 stream ports:
-/// - SerialUSB: this is the port for the USB host connection.
-/// - Serial1: on pins 7 (Tx) and 8 (Rx)
-/// - Serial2: on pins 0 (Rx) and 1 (Tx)
-/// - Serial3: on pins 29 (Tx) and 30 (Rx)
-///
-/// On Linux and OSX there can be any number of stream ports.
-/// - On Linux, names like /dev/ttyUSB0 (for a FTDO USB-stream converter)
-/// - On OSX, names like /dev/tty.usbserial-A501YSWL (for a FTDO USB-stream converter)
-///
-/// On STM32 F4 Discovery with Arduino and Arduino_STM32, there are 4 stream ports. We had success with port 2
-/// (TX on pin PA2 and RX on pin PA3) and initialising the driver like this:
-/// RH_E220 driver(Serial2);
-///
-/// Note that it is necessary for you to select which Serial port your RF_Serial will use and pass it to the 
-/// contructor. On Linux you must pass an instance of HardwareSerial.
-///
-/// \par Testing
-/// 
-/// You can test this class and the RHReliableDatagram manager
-/// on Unix and OSX with back-to-back connected FTDI USB-stream adapters.
-/// Back-to-back means the TX of one is connected to the RX of the other and vice-versa. 
-/// You should also join the ground pins.
-///
-/// Assume the 2 USB-stream adapters are connected by USB
-/// and have been assigned device names: 
-/// /dev/ttyUSB0 and /dev/ttyUSB1.
-/// Build the example RHReliableDatagram client and server programs:
-/// \code
-/// tools/simBuild examples/stream/serial_reliable_datagram_server/serial_reliable_datagram_server.pde
-/// tools/simBuild examples/stream/serial_reliable_datagram_client/serial_reliable_datagram_client.pde
-/// \endcode
-/// In one window run the server, specifying the device to use as an environment variable:
-/// \code
-/// RH_HARDWARESERIAL_DEVICE_NAME=/dev/ttyUSB1 ./serial_reliable_datagram_server 
-/// \endcode
-/// And in another window run the client, specifying the other device to use as an environment variable:
-/// \code
-/// RH_HARDWARESERIAL_DEVICE_NAME=/dev/ttyUSB0 ./serial_reliable_datagram_client 
-/// \endcode
-/// You should see the 2 programs passing messages to each other.
-/// 
+
 class RH_E220 : public RHGenericDriver {
 public:
     /// Constructor
@@ -234,12 +161,12 @@ public:
     ///
     /// This is NOT to be used to control the baud rate of the stream connection to the radio
     typedef enum {
-        DataRate2400bps = RH_E220_PARAM_SPED_DATARATE_2400,
-        DataRate4800bps = RH_E220_PARAM_SPED_DATARATE_4800,
-        DataRate9600bps = RH_E220_PARAM_SPED_DATARATE_9600,
-        DataRate19200bps = RH_E220_PARAM_SPED_DATARATE_19200,
-        DataRate38400bps = RH_E220_PARAM_SPED_DATARATE_38400,
-        DataRate62500bps = RH_E220_PARAM_SPED_DATARATE_62500,
+        DataRate2400bps = RH_E220_PARAM_SPED_DATA_RATE_2400,
+        DataRate4800bps = RH_E220_PARAM_SPED_DATA_RATE_4800,
+        DataRate9600bps = RH_E220_PARAM_SPED_DATA_RATE_9600,
+        DataRate19200bps = RH_E220_PARAM_SPED_DATA_RATE_19200,
+        DataRate38400bps = RH_E220_PARAM_SPED_DATA_RATE_38400,
+        DataRate62500bps = RH_E220_PARAM_SPED_DATA_RATE_62500,
     } DataRate;
 
     /// Sets the on-air data rate to be used by the transmitter and receiver
@@ -294,17 +221,6 @@ public:
     bool setAddress(uint8_t addh, uint8_t addl);
 
     bool setChannel(uint8_t chan);
-
-    /// \brief Values to be passed to setSubPacket() to control the sub-packet settings
-    ///
-    typedef enum {
-        SubPacket200B = RH_E220_PARAM_OPT1_SUBPKT_200,
-        SubPacket128B = RH_E220_PARAM_OPT1_SUBPKT_128,
-        SubPacket64B = RH_E220_PARAM_OPT1_SUBPKT_64,
-        SubPacket32B = RH_E220_PARAM_OPT1_SUBPKT_32,
-    } SubPacketLen;
-
-    bool setSubPacket(SubPacketLen len);
 
 protected:
     /// \brief Defines different receiver states in teh receiver state machine
@@ -379,6 +295,10 @@ protected:
     /// Implements DLE stuffing and keeps track of the senders FCS
     void txData(uint8_t ch);
 
+    static bool updateRegister(uint8_t &reg, uint8_t value, uint8_t mask);
+
+private:
+
     /// Reference to the Stream we will use
     Stream &_stream;
 
@@ -392,7 +312,7 @@ protected:
     uint16_t _rxRecdFcs;
 
     /// The Rx buffer
-    uint8_t _rxBuf[RH_E220_MAX_PAYLOAD_LEN];
+    uint8_t _rxBuf[RH_E220_MAX_MESSAGE_LEN];
 
     /// Current length of data in the Rx buffer
     uint8_t _rxBufLen;
@@ -403,19 +323,19 @@ protected:
     /// FCS for transmitted data
     uint16_t _txFcs;
 
-private:
     uint8_t _auxPin;
 
     uint8_t _m0Pin;
 
     uint8_t _m1Pin;
 
-    uint8_t _targetAddh;
+    typedef struct {
+        uint8_t addh;
+        uint8_t addl;
+        uint8_t chan;
+    } Target;
 
-    uint8_t _targetAddl;
-
-    uint8_t _targetChan;
-
+    Target _target;
 };
 
 #endif

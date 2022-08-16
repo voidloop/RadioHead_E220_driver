@@ -17,9 +17,7 @@ RH_E220::RH_E220(Stream &stream, uint8_t m0Pin, uint8_t m1Pin, uint8_t auxPin)
           _auxPin(auxPin),
           _m0Pin(m0Pin),
           _m1Pin(m1Pin),
-          _targetAddh(0xFF),
-          _targetAddl(0xFF),
-          _targetChan(0x00) {
+          _target({0xFF, 0xFF, 0x00}) {
     pinMode(_auxPin, INPUT_PULLUP);
     pinMode(_m0Pin, OUTPUT);
     pinMode(_m1Pin, OUTPUT);
@@ -33,39 +31,27 @@ bool RH_E220::init() {
         return false;
 
     _rxState = RxStateIdle;
-    clearRxBuf();
 
     Parameters params;
-    readParameters(params);
+    if (!readParameters(params))
+        return false;
+
+    bool write = false;
+
+    write |= updateRegister(params.opt1, RH_E220_PACKET_LEN, RH_E220_PARAM_OPT1_PACKET_LEN_MASK);
+    write |= updateRegister(params.opt1, RH_E220_DEFAULT_POWER, RH_E220_PARAM_OPT1_POWER_MASK);
+    write |= updateRegister(params.sped, RH_E220_DEFAULT_UART_BAUD, RH_E220_PARAM_SPED_UART_BAUD_MASK);
+    write |= updateRegister(params.sped, RH_E220_DEFAULT_UART_MODE, RH_E220_PARAM_SPED_UART_MODE_MASK);
+    write |= updateRegister(params.sped, RH_E220_DEFAULT_DATA_RATE, RH_E220_PARAM_SPED_DATA_RATE_MASK);
+
+    if (write && !writeParameters(params, true)) {
+        return false;
+    }
+
     printBuffer("PARAMS", (uint8_t *) &params, sizeof(params));
 
     setCADTimeout(1000);
     return true;
-}
-
-bool RH_E220::setBaudRate(BaudRate rate, Parity parity) {
-    Parameters params;
-    if (!readParameters(params))
-        return false;
-    // The DataRate enums are the same values as the register bitmasks
-    params.sped &= ~RH_E220_PARAM_SPED_UART_BAUD_MASK;
-    params.sped |= (rate & RH_E220_PARAM_SPED_UART_BAUD_MASK);
-
-    // Also set the parity
-    params.sped &= ~RH_E220_PARAM_SPED_UART_MODE_MASK;
-    params.sped |= (parity & RH_E220_PARAM_SPED_UART_MODE_MASK);
-
-    return writeParameters(params);
-}
-
-bool RH_E220::setDataRate(DataRate rate) {
-    Parameters params;
-    if (!readParameters(params))
-        return false;
-    // The DataRate enums are the same values as the register bitmasks
-    params.sped &= ~RH_E220_PARAM_SPED_DATARATE_MASK;
-    params.sped |= (rate & RH_E220_PARAM_SPED_DATARATE_MASK);
-    return writeParameters(params);
 }
 
 // Call this often
@@ -214,6 +200,10 @@ bool RH_E220::recv(uint8_t *buf, uint8_t *len) {
     return true;
 }
 
+bool RH_E220::isChannelActive() {
+    return digitalRead(_auxPin) == LOW;
+}
+
 // Caution: this may block
 bool RH_E220::send(const uint8_t *data, uint8_t len) {
     if (len > RH_E220_MAX_MESSAGE_LEN)
@@ -223,9 +213,7 @@ bool RH_E220::send(const uint8_t *data, uint8_t len) {
         return false;  // Check channel activity
 
     // Write the target
-    _stream.write(_targetAddh);
-    _stream.write(_targetAddl);
-    _stream.write(_targetChan);
+    _stream.write((uint8_t*) &_target, sizeof(_target));
 
     _txFcs = 0xffff;    // Initial value
     _stream.write(DLE); // Not in FCS
@@ -379,14 +367,25 @@ bool RH_E220::writeParameters(Parameters &params, bool save) {
     return true;
 }
 
-bool RH_E220::isChannelActive() {
-    return digitalRead(_auxPin) == LOW;
+bool RH_E220::setBaudRate(BaudRate rate, Parity parity) {
+    Parameters params;
+    if (!readParameters(params))
+        return false;
+    // The DataRate enums are the same values as the register bitmasks
+    params.sped &= ~RH_E220_PARAM_SPED_UART_BAUD_MASK;
+    params.sped |= (rate & RH_E220_PARAM_SPED_UART_BAUD_MASK);
+
+    // Also set the parity
+    params.sped &= ~RH_E220_PARAM_SPED_UART_MODE_MASK;
+    params.sped |= (parity & RH_E220_PARAM_SPED_UART_MODE_MASK);
+
+    return writeParameters(params);
 }
 
 void RH_E220::setTarget(uint8_t addh, uint8_t addl, uint8_t chan) {
-    _targetAddh = addh;
-    _targetAddl = addl;
-    _targetChan = chan;
+    _target.addh = addh;
+    _target.addl = addl;
+    _target.chan = chan;
 }
 
 bool RH_E220::setPower(PowerLevel level) {
@@ -415,13 +414,23 @@ bool RH_E220::setChannel(uint8_t chan) {
     return writeParameters(params);
 }
 
-bool RH_E220::setSubPacket(SubPacketLen len) {
+bool RH_E220::setDataRate(DataRate rate) {
     Parameters params;
     if (!readParameters(params))
         return false;
-    params.opt1 &= ~RH_E220_PARAM_OPT1_SUBPKT_MASK;
-    params.opt1 |= (len & RH_E220_PARAM_OPT1_SUBPKT_MASK);
+    // The DataRate enums are the same values as the register bitmasks
+    params.sped &= ~RH_E220_PARAM_SPED_DATA_RATE_MASK;
+    params.sped |= (rate & RH_E220_PARAM_SPED_DATA_RATE_MASK);
     return writeParameters(params);
+}
+
+bool RH_E220::updateRegister(uint8_t &reg, uint8_t value, uint8_t mask) {
+    if ((reg & mask) != value) {
+        reg &= ~mask;
+        reg |= (value & mask);
+        return true;
+    }
+    return false;
 }
 
 #endif // RH_HAVE_SERIAL

@@ -1,18 +1,3 @@
-// serial_reliable_datagram_server.pde
-// -*- mode: C++ -*-
-// Example sketch showing how to create a simple addressed, reliable messaging server
-// with the RHReliableDatagram class, using the RH_E220 driver to
-// communicate using packets over a stream port (or a radio connected to a
-// stream port, such as the 3DR Telemetry radio V1 and others).
-// It is designed to work with the other example serial_reliable_datagram_client
-// Tested on Arduino Mega and ChipKit Uno32 (normal Arduinos only have one
-// stream port and so it's not possible to test on them and still have debug
-// output)
-// Tested with Arduino Mega, Teensy 3.1, Moteino, Arduino Due
-// Also works on Linux an OSX. Build and test with:
-//  tools/simBuild examples/stream/serial_reliable_datagram_server/serial_reliable_datagram_server.pde
-//  RH_HARDWARESERIAL_DEVICE_NAME=/dev/ttyUSB0 ./serial_reliable_datagram_server
-
 #include "RHReliableDatagram.h"
 #include "RH_E220.h"
 
@@ -36,7 +21,7 @@ void setup()
     delay(3000);
 
     Serial.println("Initializing...");
-    Serial1.begin(RH_E220_CONFIG_BAUD_RATE);
+    Serial1.begin(RH_E220_CONFIG_UART_BAUD);
 
 //    driver.setPower(RH_E220::Power22dBm);
 //    driver.setAddress(0x03, 0x03);
