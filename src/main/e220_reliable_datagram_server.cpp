@@ -40,7 +40,7 @@ void setup()
 
 //    driver.setPower(RH_E220::Power22dBm);
 //    driver.setAddress(0x03, 0x03);
-//    driver.setChannel(0x15);
+    driver.setChannel(0x15);
 //    driver.setBaudRate();
 
     driver.setTarget(0x1,0x1,0x16);

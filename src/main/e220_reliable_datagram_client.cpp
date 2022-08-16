@@ -26,11 +26,11 @@ void setup() {
     delay(3000);
     Serial.println("Initializing...");
 
-    //driver.setChannel(0x16);
+    driver.setChannel(0x15);
     //driver.setPower(RH_E220::Power22dBm);
     //driver.setBaudRate();
 
-    driver.setTarget(0xFF, 0xFF, 0x17);
+    driver.setTarget(0xFF, 0xFF, 0x16);
 
     if (!manager.init())
         Serial.println("Failed");

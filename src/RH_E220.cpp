@@ -319,7 +319,7 @@ void RH_E220::setOperatingMode(OperatingMode mode) {
             break;
     }
     waitAuxHigh();
-    delay(10); // Takes a little while to start its response
+    delay(20); // Takes a little while to start its response
 }
 
 bool RH_E220::readParameters(Parameters &params) {
@@ -374,9 +374,6 @@ bool RH_E220::writeParameters(Parameters &params, bool save) {
         return false;
 
     //printBuffer("additional read", (uint8_t*)&params, sizeof(params));
-
-    // Without a little delay here, writing params often fails
-    //delay(20);
 
     setOperatingMode(ModeNormal);
     return true;
