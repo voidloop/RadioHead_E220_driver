@@ -86,11 +86,13 @@
 
 #define RH_E220_CONFIG_UART_BAUD    9600
 
-#define PREAMBLE 0xAA
 
 // The length of the headers we add.
 // The headers are inside the payload and are therefore protected by the FCS
 #define RH_E220_HEADER_LEN 4
+
+// This is the preamble octet.
+#define PREAMBLE 0xAA
 
 // Maximum message length of the packet that can be supported by this driver.
 // +----------------+-------------------+-------+
