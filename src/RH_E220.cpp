@@ -28,9 +28,14 @@ bool RH_E220::init() {
     if (!readParameters(params))
         return false;
 
-    uint8_t sped = RH_E220_DEFAULT_UART_BAUD | RH_E220_DEFAULT_UART_MODE | RH_E220_DEFAULT_DATA_RATE;
+    uint8_t sped = RH_E220_DEFAULT_UART_BAUD |
+                   RH_E220_DEFAULT_UART_MODE |
+                   RH_E220_DEFAULT_DATA_RATE;
+
     uint8_t opt1 = RH_E220_DEFAULT_POWER;
-    uint8_t opt2 = RH_E220_PARAM_OPT2_TX_METHOD_FIXED | RH_E220_PARAM_OPT2_WOR_CYCLE_2000;
+
+    uint8_t opt2 = RH_E220_PARAM_OPT2_TX_METHOD_FIXED |
+                   RH_E220_PARAM_OPT2_WOR_CYCLE_2000;
 
     bool write = params.sped != sped ||
                  params.opt1 != opt1 ||
@@ -40,7 +45,9 @@ bool RH_E220::init() {
         return false;
     }
 
-    setCADTimeout(1000);
+    printBuffer("CONF", (uint8_t *)&params, sizeof(params));
+
+    setMode(RHModeRx);
     return true;
 }
 
@@ -100,7 +107,6 @@ void RH_E220::handleRx(uint8_t ch) {
                 clearRxBuf();
                 _rxState = RxStateData;
             }
-
         }
             break;
 
@@ -181,17 +187,12 @@ bool RH_E220::recv(uint8_t *buf, uint8_t *len) {
     return true;
 }
 
-bool RH_E220::isChannelActive() {
-    return digitalRead(_auxPin) == LOW;
-}
-
 // Caution: this may block
 bool RH_E220::send(const uint8_t *data, uint8_t len) {
     if (len > RH_E220_MAX_MESSAGE_LEN)
         return false;
 
-    if (!waitCAD())
-        return false;  // Check channel activity
+    waitPacketSent();
 
     // Write the target
     _stream.write((uint8_t *) &_target, sizeof(_target));
@@ -217,6 +218,17 @@ bool RH_E220::send(const uint8_t *data, uint8_t len) {
     // Now send the calculated FCS for this message
     _stream.write((_txFcs >> 8) & 0xff);
     _stream.write(_txFcs & 0xff);
+
+    setMode(RHModeTx);
+    _txGood++;
+
+    return true;
+}
+
+bool RH_E220::waitPacketSent() {
+    if (_mode == RHModeTx)
+        waitAuxHigh();
+    setMode(RHModeRx);
     return true;
 }
 
@@ -230,40 +242,33 @@ uint8_t RH_E220::maxMessageLength() {
 }
 
 void RH_E220::setOperatingMode(OperatingMode mode) {
-    PinStatus m0Status = digitalRead(_m0Pin);
-    PinStatus m1Status = digitalRead(_m1Pin);
+    waitAuxHigh();
+
     switch (mode) {
         case ModeNormal:
-            if (m0Status == LOW && m1Status == LOW)
-                return;
             digitalWrite(_m0Pin, LOW);
             digitalWrite(_m1Pin, LOW);
             break;
 
         case ModeWakeUp:
-            if (m0Status == HIGH && m1Status == LOW)
-                return;
             digitalWrite(_m0Pin, HIGH);
             digitalWrite(_m1Pin, LOW);
             break;
 
         case ModePowerSaving:
-            if (m0Status == LOW && m1Status == HIGH)
-                return;
             digitalWrite(_m0Pin, LOW);
             digitalWrite(_m1Pin, HIGH);
             break;
 
         case ModeSleep:
-            if (m0Status == HIGH && m1Status == HIGH)
-                return;
             digitalWrite(_m0Pin, HIGH);
             digitalWrite(_m1Pin, HIGH);
             break;
     }
+
     waitAuxHigh();
-    // I don't understand this delay... how much?
-    delay(500); // Takes a little while to start its response
+    // I don't understand this delay...
+    delay(50); // Takes a little while to start its response
 }
 
 bool RH_E220::readParameters(Parameters &params) {

@@ -162,10 +162,6 @@ public:
     /// \return The maximum legal message length
     uint8_t maxMessageLength() override;
 
-    /// Determine if the currently selected radio channel is active.
-    /// \return true if the radio-specific CAD shows the current radio channel as active, else false.
-    bool isChannelActive() override;
-
     /// \brief Values to be passed to setDataRate() to control the on-air data rate
     ///
     /// This is NOT to be used to control the baud rate of the stream connection to the radio
@@ -210,6 +206,9 @@ public:
     /// \param[in] parity A valid parity from the PArity enum
     /// \return true if successful
     bool setBaudRate(BaudRate rate = BaudRate9600, Parity parity = Parity8N1);
+
+
+    bool waitPacketSent() override;
 
     void setTarget(uint8_t addh, uint8_t addl, uint8_t chan);
 

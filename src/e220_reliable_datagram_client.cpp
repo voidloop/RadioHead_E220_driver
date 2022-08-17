@@ -25,7 +25,7 @@ void setup() {
     // the driver or any other driver.set* function
     Serial1.begin(RH_E220_CONFIG_UART_BAUD);
 
-    driver.setChannel(0x15);
+    driver.setChannel(0x14);
     driver.setTarget(0xFF, 0xFF, 0x16);
 
     if (!manager.init())
@@ -50,7 +50,7 @@ void loop() {
     Serial.println("Sending to e220_reliable_datagram_server");
 
     // Send a message to manager_server
-    if (manager.sendtoWait(data, RH_E220_MAX_MESSAGE_LEN, SERVER_ADDRESS)) {
+    if (manager.sendtoWait(data, RH_E220_MAX_MESSAGE_LEN/2, SERVER_ADDRESS)) {
         // Now wait for a reply from the server
         uint8_t len = sizeof(buf);
         uint8_t from;

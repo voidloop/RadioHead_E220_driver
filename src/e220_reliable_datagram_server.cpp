@@ -27,7 +27,7 @@ void setup()
     Serial1.begin(RH_E220_CONFIG_UART_BAUD);
 
     driver.setChannel(0x16);
-    driver.setTarget(0xFF,0xFF,0x15);
+    driver.setTarget(0xFF,0xFF,0x14);
 
     if (!manager.init())
         Serial.println("Failed");
