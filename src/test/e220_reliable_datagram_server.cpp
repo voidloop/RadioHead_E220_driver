@@ -45,7 +45,7 @@ void setup()
     Serial.println("Done");
 }
 
-uint8_t data[] = "PONG!";
+uint8_t data[] = "PONG!               ";
 // Don't put this on the stack
 uint8_t buf[RH_E220_MAX_MESSAGE_LEN];
 

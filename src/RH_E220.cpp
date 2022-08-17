@@ -68,56 +68,70 @@ void RH_E220::waitAuxHigh() const {
 }
 
 void RH_E220::handleRx(uint8_t ch) {
+    static uint8_t dataLen = 0;
+
     // State machine for receiving chars
     switch (_rxState) {
         case RxStateIdle: {
-            if (ch == DLE) {
-                _rxState = RxStateDLE;
+            if (ch == PREAMBLE) {
+                //Serial.print('P');
+                _rxState = RxStatePreamble1;
             }
         }
             break;
 
-        case RxStateDLE: {
-            if (ch == STX) {
-                clearRxBuf();
-                _rxState = RxStateData;
+        case RxStatePreamble1: {
+            if (ch == PREAMBLE) {
+                //Serial.print('P');
+                _rxState = RxStatePreamble2;
             } else {
                 _rxState = RxStateIdle;
             }
         }
             break;
 
-        case RxStateData: {
-            if (ch == DLE) {
-                _rxState = RxStateEscape;
+        case RxStatePreamble2: {
+            if (ch == PREAMBLE) {
+                //Serial.print('P');
+                _rxState = RxStateLength;
             } else {
-                appendRxBuf(ch);
+                _rxState = RxStateIdle;
             }
         }
             break;
 
-        case RxStateEscape: {
-            if (ch == ETX) {
-                // add fcs for DLE, ETX
-                _rxFcs = RHcrc_ccitt_update(_rxFcs, DLE);
-                _rxFcs = RHcrc_ccitt_update(_rxFcs, ETX);
-                _rxState = RxStateWaitFCS1; // End frame
-            } else if (ch == DLE) {
-                appendRxBuf(ch);
-                _rxState = RxStateData;
+        case RxStateLength: {
+            //Serial.print('L');
+            dataLen = ch;
+            if (dataLen < RH_E220_HEADER_LEN || dataLen > RH_E220_MAX_PAYLOAD_LEN) {
+                // Broken packet?
+                _rxState = RxStateIdle;
             } else {
-                _rxState = RxStateIdle; // Unexpected
+                clearRxBuf();
+                _rxState = RxStateData;
             }
+
+        }
+            break;
+
+        case RxStateData: {
+            //Serial.print('x');
+            dataLen--;
+            appendRxBuf(ch);
+            if (dataLen == 0)
+                _rxState = RxStateWaitFCS1;
         }
             break;
 
         case RxStateWaitFCS1: {
+            //Serial.print('C');
             _rxRecdFcs = ch << 8;
             _rxState = RxStateWaitFCS2;
         }
             break;
 
         case RxStateWaitFCS2: {
+            //Serial.println('C');
             _rxRecdFcs |= ch;
             _rxState = RxStateIdle;
             validateRxBuf();
@@ -197,8 +211,10 @@ bool RH_E220::send(const uint8_t *data, uint8_t len) {
     _stream.write((uint8_t *) &_target, sizeof(_target));
 
     _txFcs = 0xffff;    // Initial value
-    _stream.write(DLE); // Not in FCS
-    _stream.write(STX); // Not in FCS
+    _stream.write(PREAMBLE); // Not in FCS
+    _stream.write(PREAMBLE); // Not in FCS
+    _stream.write(PREAMBLE); // Not in FCS
+    _stream.write(len + RH_E220_HEADER_LEN); // Not in FCS
 
     // First the 4 headers
     txData(_txHeaderTo);
@@ -212,21 +228,13 @@ bool RH_E220::send(const uint8_t *data, uint8_t len) {
         len--;
     }
 
-    _stream.write(DLE);
-    _txFcs = RHcrc_ccitt_update(_txFcs, DLE);
-    _stream.write(ETX);
-    _txFcs = RHcrc_ccitt_update(_txFcs, ETX);
-
     // Now send the calculated FCS for this message
     _stream.write((_txFcs >> 8) & 0xff);
     _stream.write(_txFcs & 0xff);
-
     return true;
 }
 
 void RH_E220::txData(uint8_t ch) {
-    if (ch == DLE)    // DLE stuffing required?
-        _stream.write(DLE); // Not in FCS
     _stream.write(ch);
     _txFcs = RHcrc_ccitt_update(_txFcs, ch);
 }

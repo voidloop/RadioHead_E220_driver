@@ -86,28 +86,23 @@
 
 #define RH_E220_CONFIG_UART_BAUD    9600
 
-// Special characters
-#define STX 0x02
-#define ETX 0x03
-#define DLE 0x10
-#define SYN 0x16
-
+#define PREAMBLE 0xAA
 
 // The length of the headers we add.
 // The headers are inside the payload and are therefore protected by the FCS
 #define RH_E220_HEADER_LEN 4
 
 // Maximum message length of the packet that can be supported by this driver.
-// +-----------+----------------+-----------------+
-// | FRAME     | PAYLOAD        | FRAME           |
-// +-----+-----+---------+------+-----+-----+-----+
-// | DLE | STX | HEADER  | MSG  | DLE | ETX | FCS |
-// +-----+-----+---------+------+-----+-----+-----+
-// | 1   | 1   | 4       | 187  | 1   | 1   | 2   |
-// +-----+-----+---------+------+-----+-----+-----+
+// +----------------+-------------------+-------+
+// | FRAME          | PAYLOAD           | FRAME |
+// +----------+-----+----+--------------+-------+
+// | PREAMBLE | LEN | HEADER  | MESSAGE | FCS   |
+// +----------+---+------+--------------+-------+
+// | 3        | 1   | 4       | 187     | 2     |
+// +----------+---+------+--------------+---++--+
+// The first 3 octets (before PREAMBLE) are the target.
 
-#define RH_E220_PACKET_LEN        RH_E220_PARAM_OPT1_PACKET_LEN_200
-#define RH_E220_MAX_PAYLOAD_LEN   191 // HEADER + MSG
+#define RH_E220_MAX_PAYLOAD_LEN   191 // HEADER + MESSAGE
 
 // This is the maximum message length that can be supported by this library.
 // It is an arbitrary limit.
@@ -124,19 +119,10 @@
 ///
 /// \par Packet Format
 ///
-/// All messages sent and received by this RH_E220 Driver conform to this packet format:
-/// \code
-/// DLE
-/// STX
-/// TO Header                (1 octet)
-/// FROM Header              (1 octet)
-/// ID Header                (1 octet)
-/// FLAGS Header             (1 octet)
-/// Message payload          (0 to 60 octets)
-/// DLE
-/// ETX
-/// Frame Check Sequence FCS CCITT CRC-16 (2 octets)
-/// \endcode
+/// All messages sent and received by this Driver conform to this packet format:
+///
+/// - 5 octets HEADER: (LENGTH,  TO, FROM, ID, FLAGS)
+/// - 0 to 53 octets DATA
 ///
 
 class RH_E220 : public RHGenericDriver {
@@ -256,10 +242,11 @@ protected:
     /// \brief Defines different receiver states in teh receiver state machine
     typedef enum {
         RxStateInitialising = 0,  ///< Before init() is called
-        RxStateIdle,              ///< Waiting for an STX
-        RxStateDLE,               ///< Waiting for the DLE after STX
+        RxStateIdle,              ///< Waiting for an first PREAMBLE
+        RxStatePreamble1,         ///< Waiting for an second PREAMBLE
+        RxStatePreamble2,         ///< Waiting for an third PREAMBLE
+        RxStateLength,            ///< Got the length of receiving data
         RxStateData,              ///< Receiving data
-        RxStateEscape,            ///< Got a DLE while receiving data.
         RxStateWaitFCS1,          ///< Got DLE ETX, waiting for first FCS octet
         RxStateWaitFCS2           ///< Waiting for second FCS octet
     } RxState;
