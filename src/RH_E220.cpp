@@ -40,8 +40,6 @@ bool RH_E220::init() {
         return false;
     }
 
-    printBuffer("PARAMS", (uint8_t *) &params, sizeof(params));
-
     setCADTimeout(1000);
     return true;
 }
