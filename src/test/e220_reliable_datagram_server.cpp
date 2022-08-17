@@ -21,31 +21,26 @@ void setup()
     delay(3000);
 
     Serial.println("Initializing...");
+
+    // Remember to set serial baud rate before call initialise
+    // the driver or any other driver.set* function
     Serial1.begin(RH_E220_CONFIG_UART_BAUD);
 
-//    driver.setPower(RH_E220::Power22dBm);
-//    driver.setAddress(0x03, 0x03);
     driver.setChannel(0x16);
-//    driver.setBaudRate();
-
     driver.setTarget(0xFF,0xFF,0x15);
 
     if (!manager.init())
         Serial.println("Failed");
+    else
+        Serial.println("Done");
 
-    Serial.println("loop");
-//    while (true) {
-//        while (Serial1.available()) {
-//            Serial.print(Serial1.read());
-//            Serial.print(',');
-//        }
-//    }
+    // Remember to set serial baud rate after driver initialisation
+    Serial1.begin(9600);
 
     manager.setTimeout(2000);
-    Serial.println("Done");
 }
 
-uint8_t data[] = "PONG!               ";
+uint8_t data[] = "PONG!";
 // Don't put this on the stack
 uint8_t buf[RH_E220_MAX_MESSAGE_LEN];
 

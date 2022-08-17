@@ -18,21 +18,20 @@ RHReliableDatagram manager(driver, CLIENT_ADDRESS);
 void setup() {
     Serial.begin(115200);
 
+    delay(3000);
+    Serial.println("Initializing...");
+
     // Remember to set serial baud rate before call initialise
     // the driver or any other driver.set* function
     Serial1.begin(RH_E220_CONFIG_UART_BAUD);
 
-    delay(3000);
-    Serial.println("Initializing...");
-
-    driver.setTarget(0xFF, 0xFF, 0x16);
-
     driver.setChannel(0x15);
+    driver.setTarget(0xFF, 0xFF, 0x16);
 
     if (!manager.init())
         Serial.println("Failed");
-
-    Serial.println("Done");
+    else
+        Serial.println("Done");
 
     // Remember to set serial baud rate after driver initialisation
     Serial1.begin(9600);
