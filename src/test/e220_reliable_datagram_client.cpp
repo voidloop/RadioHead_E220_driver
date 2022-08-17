@@ -47,7 +47,7 @@ uint8_t data[RH_E220_MAX_MESSAGE_LEN] = "PING";
 uint8_t buf[RH_E220_MAX_MESSAGE_LEN];
 
 void loop() {
-    Serial.println("Sending to serial_reliable_datagram_server");
+    Serial.println("Sending to e220_reliable_datagram_server");
 
     // Send a message to manager_server
     if (manager.sendtoWait(data, RH_E220_MAX_MESSAGE_LEN, SERVER_ADDRESS)) {
@@ -60,7 +60,7 @@ void loop() {
             Serial.print(": ");
             Serial.println((char *) buf);
         } else {
-            Serial.println("No reply, is serial_reliable_datagram_server running?");
+            Serial.println("No reply, is e220_reliable_datagram_server running?");
         }
     } else
         Serial.println("sendtoWait failed");
