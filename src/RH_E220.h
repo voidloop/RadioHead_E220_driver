@@ -109,6 +109,10 @@
 #define RH_E220_MAX_MESSAGE_LEN (RH_E220_MAX_PAYLOAD_LEN - RH_E220_HEADER_LEN)
 #endif
 
+// This is for activate the RSSI byte
+// (define? or let this option editable at runtime?)
+#define RH_E220_RSSI_BYTE_ENABLED
+
 /////////////////////////////////////////////////////////////////////
 /// \class RH_E220 RH_E220.h <RH_E220.h>
 /// \brief Driver to send and receive unaddressed, unreliable datagrams via a stream connection
@@ -121,6 +125,8 @@
 /// - 1 octet LENGTH
 /// - 4 octets HEADER: (TO, FROM, ID, FLAGS)
 /// - 0 to 187 octets DATA
+/// - 2 octets FCS
+/// - 1 octet RSSI (if active)
 ///
 
 class RH_E220 : public RHGenericDriver {
@@ -207,7 +213,6 @@ public:
     /// \return true if successful
     bool setBaudRate(BaudRate rate = BaudRate9600, Parity parity = Parity8N1);
 
-
     bool waitPacketSent() override;
 
     void setTarget(uint8_t addh, uint8_t addl, uint8_t chan);
@@ -240,7 +245,10 @@ protected:
         RxStateLength,            ///< Got the length of receiving data
         RxStateData,              ///< Receiving data
         RxStateWaitFCS1,          ///< Got DLE ETX, waiting for first FCS octet
-        RxStateWaitFCS2           ///< Waiting for second FCS octet
+        RxStateWaitFCS2,          ///< Waiting for second FCS octet
+#ifdef RH_E220_RSSI_BYTE_ENABLED
+        RxStateWaitRSSI,          ///< Waiting for RSSI byte
+#endif
     } RxState;
 
     /// \brief Defines values to be passed to setOperatingMode

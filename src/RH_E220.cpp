@@ -37,15 +37,21 @@ bool RH_E220::init() {
     uint8_t opt2 = RH_E220_PARAM_OPT2_TX_METHOD_FIXED |
                    RH_E220_PARAM_OPT2_WOR_CYCLE_2000;
 
+#ifdef RH_E220_RSSI_BYTE_ENABLED
+    opt2 |= RH_E220_PARAM_OPT2_RSSI_BYTE_ENABLE;
+#endif
+
     bool write = params.sped != sped ||
                  params.opt1 != opt1 ||
                  params.opt2 != opt2;
 
-    if (write && !writeParameters(params, true)) {
-        return false;
+    if (write) {
+        params.sped = sped;
+        params.opt1 = opt1;
+        params.opt2 = opt2;
+        if (!writeParameters(params, true))
+            return false;
     }
-
-    printBuffer("CONF", (uint8_t *)&params, sizeof(params));
 
     setMode(RHModeRx);
     return true;
@@ -54,7 +60,9 @@ bool RH_E220::init() {
 // Call this often
 bool RH_E220::available() {
     while (!_rxBufValid && _stream.available()) {
-        handleRx(_stream.read());
+        uint8_t ch = _stream.read();
+        //Serial.print(ch);
+        handleRx(ch);
     }
     return _rxBufValid;
 }
@@ -71,7 +79,6 @@ void RH_E220::handleRx(uint8_t ch) {
     switch (_rxState) {
         case RxStateIdle: {
             if (ch == PREAMBLE) {
-                //Serial.print('P');
                 _rxState = RxStatePreamble1;
             }
         }
@@ -79,7 +86,6 @@ void RH_E220::handleRx(uint8_t ch) {
 
         case RxStatePreamble1: {
             if (ch == PREAMBLE) {
-                //Serial.print('P');
                 _rxState = RxStatePreamble2;
             } else {
                 _rxState = RxStateIdle;
@@ -89,7 +95,6 @@ void RH_E220::handleRx(uint8_t ch) {
 
         case RxStatePreamble2: {
             if (ch == PREAMBLE) {
-                //Serial.print('P');
                 _rxState = RxStateLength;
             } else {
                 _rxState = RxStateIdle;
@@ -98,7 +103,6 @@ void RH_E220::handleRx(uint8_t ch) {
             break;
 
         case RxStateLength: {
-            //Serial.print('L');
             dataLen = ch;
             if (dataLen < RH_E220_HEADER_LEN || dataLen > RH_E220_MAX_PAYLOAD_LEN) {
                 // Broken packet or junk?
@@ -111,7 +115,6 @@ void RH_E220::handleRx(uint8_t ch) {
             break;
 
         case RxStateData: {
-            //Serial.print('x');
             dataLen--;
             appendRxBuf(ch);
             if (dataLen == 0)
@@ -120,19 +123,30 @@ void RH_E220::handleRx(uint8_t ch) {
             break;
 
         case RxStateWaitFCS1: {
-            //Serial.print('C');
             _rxRecdFcs = ch << 8;
             _rxState = RxStateWaitFCS2;
         }
             break;
 
         case RxStateWaitFCS2: {
-            //Serial.println('C');
             _rxRecdFcs |= ch;
+#ifdef RH_E220_RSSI_BYTE_ENABLED
+            _rxState = RxStateWaitRSSI;
+#else
+            _rxState = RxStateIdle;
+            validateRxBuf();
+#endif
+        }
+            break;
+
+#ifdef RH_E220_RSSI_BYTE_ENABLED
+        case RxStateWaitRSSI: {
+            _lastRssi = ch;
             _rxState = RxStateIdle;
             validateRxBuf();
         }
             break;
+#endif
 
         default: // Else some compilers complain
             break;
@@ -243,6 +257,7 @@ uint8_t RH_E220::maxMessageLength() {
 
 void RH_E220::setOperatingMode(OperatingMode mode) {
     waitAuxHigh();
+    delay(10);
 
     switch (mode) {
         case ModeNormal:
@@ -268,7 +283,7 @@ void RH_E220::setOperatingMode(OperatingMode mode) {
 
     waitAuxHigh();
     // I don't understand this delay...
-    delay(50); // Takes a little while to start its response
+    delay(10); // Takes a little while to start its response
 }
 
 bool RH_E220::readParameters(Parameters &params) {
