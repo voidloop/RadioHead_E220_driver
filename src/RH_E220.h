@@ -95,11 +95,11 @@
 // Maximum message length of the packet that can be supported by this driver.
 // +----------------+-------------------+-------+
 // | FRAME          | PAYLOAD           | FRAME |
-// +----------+-----+----+--------------+-------+
+// +----------+-----+---------+---------+-------+
 // | PREAMBLE | LEN | HEADER  | MESSAGE | FCS   |
-// +----------+---+------+--------------+-------+
+// +----------+-----+---------+---------+-------+
 // | 3        | 1   | 4       | 187     | 2     |
-// +----------+---+------+--------------+---++--+
+// +----------+-----+---------+---------+-------+
 // The first 3 octets (before PREAMBLE) are the target.
 
 #define RH_E220_MAX_PAYLOAD_LEN   191 // HEADER + MESSAGE
