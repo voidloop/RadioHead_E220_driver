@@ -55,9 +55,9 @@
 #define RH_E220_PARAM_OPT2_RSSI_BYTE_DISABLE      0x00
 #define RH_E220_PARAM_OPT2_RSSI_BYTE_ENABLE       0x80
 
-#define RH_E220_PARAM_OPT2_TX_METHOD_MASK         0x60
+#define RH_E220_PARAM_OPT2_TX_METHOD_MASK         0x40
 #define RH_E220_PARAM_OPT2_TX_METHOD_TRANSPARENT  0x00
-#define RH_E220_PARAM_OPT2_TX_METHOD_FIXED        0x60
+#define RH_E220_PARAM_OPT2_TX_METHOD_FIXED        0x40
 
 #define RH_E220_PARAM_OPT2_LTB_MASK               0x10
 #define RH_E220_PARAM_OPT2_LTB_DISABLE            0x00
@@ -324,8 +324,6 @@ protected:
     /// Sends a single data octet to the stream port.
     /// Implements DLE stuffing and keeps track of the senders FCS
     void txData(uint8_t ch);
-
-    static bool updateRegister(uint8_t &reg, uint8_t value, uint8_t mask);
 
 private:
 

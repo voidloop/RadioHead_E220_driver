@@ -36,22 +36,13 @@ bool RH_E220::init() {
     if (!readParameters(params))
         return false;
 
-    bool write = false;
+    uint8_t sped = RH_E220_DEFAULT_UART_BAUD | RH_E220_DEFAULT_UART_MODE | RH_E220_DEFAULT_DATA_RATE;
+    uint8_t opt1 = RH_E220_DEFAULT_POWER;
+    uint8_t opt2 = RH_E220_PARAM_OPT2_TX_METHOD_FIXED | RH_E220_PARAM_OPT2_WOR_CYCLE_2000;
 
-    write |= updateRegister(params.sped, RH_E220_DEFAULT_UART_BAUD, RH_E220_PARAM_SPED_UART_BAUD_MASK);
-    write |= updateRegister(params.sped, RH_E220_DEFAULT_UART_MODE, RH_E220_PARAM_SPED_UART_MODE_MASK);
-    write |= updateRegister(params.sped, RH_E220_DEFAULT_DATA_RATE, RH_E220_PARAM_SPED_DATA_RATE_MASK);
-    write |= updateRegister(params.opt1, RH_E220_PACKET_LEN, RH_E220_PARAM_OPT1_PACKET_LEN_MASK);
-    write |= updateRegister(params.opt1, RH_E220_PARAM_OPT1_RSSI_NOISE_DISABLE, RH_E220_PARAM_OPT1_RSSI_NOISE_MASK);
-    write |= updateRegister(params.opt1, RH_E220_DEFAULT_POWER, RH_E220_PARAM_OPT1_TX_POWER_MASK);
-    write |= updateRegister(params.opt2, RH_E220_PARAM_OPT2_RSSI_BYTE_DISABLE, RH_E220_PARAM_OPT2_RSSI_BYTE_MASK);
-    write |= updateRegister(params.opt2, RH_E220_PARAM_OPT2_TX_METHOD_FIXED, RH_E220_PARAM_OPT2_TX_METHOD_MASK);
-    write |= updateRegister(params.opt2, RH_E220_PARAM_OPT2_LTB_DISABLE, RH_E220_PARAM_OPT2_LTB_MASK);
-    write |= updateRegister(params.opt2, RH_E220_PARAM_OPT2_WOR_CYCLE_2000, RH_E220_PARAM_OPT2_WOR_CYCLE_MASK);
-
-    // Clear reserved bits ?
-//    write |= updateRegister(params.opt1, (uint8_t)0, RH_E220_PARAM_OPT1_RESERVED_MASK);
-//    write |= updateRegister(params.opt2, (uint8_t)0, RH_E220_PARAM_OPT2_RESERVED_MASK); // ??
+    bool write = params.sped != sped ||
+                 params.opt1 != opt1 ||
+                 params.opt2 != opt2;
 
     if (write && !writeParameters(params, true)) {
         return false;
@@ -73,7 +64,7 @@ bool RH_E220::available() {
 
 void RH_E220::waitAuxHigh() const {
     // REVISIT: timeout needed?
-    while (digitalRead(_auxPin) == LOW) Serial.println("LOW");
+    while (digitalRead(_auxPin) == LOW);
 }
 
 void RH_E220::handleRx(uint8_t ch) {
@@ -203,7 +194,7 @@ bool RH_E220::send(const uint8_t *data, uint8_t len) {
         return false;  // Check channel activity
 
     // Write the target
-    _stream.write((uint8_t*) &_target, sizeof(_target));
+    _stream.write((uint8_t *) &_target, sizeof(_target));
 
     _txFcs = 0xffff;    // Initial value
     _stream.write(DLE); // Not in FCS
@@ -396,15 +387,6 @@ bool RH_E220::setDataRate(DataRate rate) {
     params.sped &= ~RH_E220_PARAM_SPED_DATA_RATE_MASK;
     params.sped |= (rate & RH_E220_PARAM_SPED_DATA_RATE_MASK);
     return writeParameters(params);
-}
-
-bool RH_E220::updateRegister(uint8_t &reg, uint8_t value, uint8_t mask) {
-    if ((reg & mask) != value) {
-        reg &= ~mask;
-        reg |= (value & mask);
-        return true;
-    }
-    return false;
 }
 
 #endif // RH_HAVE_SERIAL
