@@ -4,13 +4,6 @@
 
 #ifdef RH_HAVE_SERIAL
 
-// Detect aux rising with an interrupt?
-//volatile bool auxRising = false;
-//
-//void auxIsr() {
-//    auxRising = true;
-//}
-
 RH_E220::RH_E220(Stream &stream, uint8_t m0Pin, uint8_t m1Pin, uint8_t auxPin)
         : _stream(stream),
           _rxState(RxStateInitialising),
@@ -23,7 +16,6 @@ RH_E220::RH_E220(Stream &stream, uint8_t m0Pin, uint8_t m1Pin, uint8_t auxPin)
     pinMode(_m1Pin, OUTPUT);
     digitalWrite(_m0Pin, HIGH);
     digitalWrite(_m1Pin, HIGH);
-    //attachInterrupt(digitalPinToInterrupt(_auxPin), auxIsr, RISING);
 }
 
 bool RH_E220::init() {
@@ -104,7 +96,7 @@ void RH_E220::handleRx(uint8_t ch) {
             //Serial.print('L');
             dataLen = ch;
             if (dataLen < RH_E220_HEADER_LEN || dataLen > RH_E220_MAX_PAYLOAD_LEN) {
-                // Broken packet?
+                // Broken packet or junk?
                 _rxState = RxStateIdle;
             } else {
                 clearRxBuf();
@@ -164,13 +156,9 @@ void RH_E220::validateRxBuf() {
 }
 
 void RH_E220::appendRxBuf(uint8_t ch) {
-    if (_rxBufLen < RH_E220_MAX_PAYLOAD_LEN) {
-        // Normal data, save and add to FCS
-        _rxBuf[_rxBufLen++] = ch;
-        _rxFcs = RHcrc_ccitt_update(_rxFcs, ch);
-    }
-    // If the buffer overflows, we don't record the trailing data, and the FCS will be wrong,
-    // causing the message to be dropped when the FCS is received
+    // Normal data, save and add to FCS
+    _rxBuf[_rxBufLen++] = ch;
+    _rxFcs = RHcrc_ccitt_update(_rxFcs, ch);
 }
 
 void RH_E220::clearRxBuf() {
@@ -244,9 +232,6 @@ uint8_t RH_E220::maxMessageLength() {
 }
 
 void RH_E220::setOperatingMode(OperatingMode mode) {
-    //noInterrupts();
-    //auxRising = false;
-    //interrupts();
     PinStatus m0Status = digitalRead(_m0Pin);
     PinStatus m1Status = digitalRead(_m1Pin);
     switch (mode) {
@@ -288,10 +273,8 @@ bool RH_E220::readParameters(Parameters &params) {
 
     uint8_t readParamsCommand[] = {RH_E220_COMMAND_READ_PARAMS, 0x00, sizeof(params)};
     _stream.write(readParamsCommand, sizeof(readParamsCommand));
-    //printBuffer("COMMAND", readParamsCommand, sizeof(readParamsCommand));
 
     size_t result = _stream.readBytes(readParamsCommand, sizeof(readParamsCommand));
-    //printBuffer("RESPONSE", readParamsCommand, sizeof(readParamsCommand));
 
     if (result != sizeof(readParamsCommand) || (
             readParamsCommand[0] == 0xFF &&
@@ -302,7 +285,6 @@ bool RH_E220::readParameters(Parameters &params) {
 
     result = _stream.readBytes((uint8_t *) &params, sizeof(params));
     setOperatingMode(ModeNormal);
-    //printBuffer("PARAMS", (uint8_t *) &params, sizeof(params));
     return (result == sizeof(Parameters));
 }
 
@@ -311,7 +293,6 @@ bool RH_E220::writeParameters(Parameters &params, bool save) {
 
     uint8_t head = save ? RH_E220_COMMAND_WRITE_PARAMS_SAVE : RH_E220_COMMAND_WRITE_PARAMS_NOSAVE;
     uint8_t writeParamsCommand[] = {head, 0x00, sizeof(params)};
-    //printBuffer("writing now", (uint8_t*)&params, sizeof(params));
 
     size_t result = _stream.write(writeParamsCommand, sizeof(writeParamsCommand));
     if (result != sizeof(writeParamsCommand))
@@ -333,8 +314,6 @@ bool RH_E220::writeParameters(Parameters &params, bool save) {
     result = _stream.readBytes((uint8_t *) &params, sizeof(params));
     if (result != sizeof(params))
         return false;
-
-    //printBuffer("additional read", (uint8_t*)&params, sizeof(params));
 
     setOperatingMode(ModeNormal);
     return true;
