@@ -73,12 +73,8 @@
 #define RH_E220_PARAM_OPT2_WOR_CYCLE_3500         0x06
 #define RH_E220_PARAM_OPT2_WOR_CYCLE_4000         0x07
 
-// Reserved for what?
-#define RH_E220_PARAM_OPT1_RESERVED_MASK          0x1C
-#define RH_E220_PARAM_OPT2_RESERVED_MASK          0x28
 
-
-// Defaults, set in init()
+// Defaults
 #define RH_E220_DEFAULT_POWER       RH_E220_PARAM_OPT1_TX_POWER_10
 #define RH_E220_DEFAULT_DATA_RATE   RH_E220_PARAM_SPED_DATA_RATE_2400
 #define RH_E220_DEFAULT_UART_MODE   RH_E220_PARAM_SPED_UART_MODE_8N1
@@ -102,15 +98,13 @@
 // +----------+-----+---------+---------+-------+
 // | 3        | 1   | 4       | 187     | 2     |
 // +----------+-----+---------+---------+-------+
-// The first 3 octets (before PREAMBLE) are the target.
+// The first 3 octets (before PREAMBLE) are the target (see EBYTE documentation).
 
 #define RH_E220_MAX_PAYLOAD_LEN   191 // HEADER + MESSAGE
 
 // This is the maximum message length that can be supported by this library.
 // It is an arbitrary limit.
-// Can be pre-defined to a smaller size (to save SRAM) prior to including this header
-// Here we allow for 4 bytes of address and header and payload to be included in the 64 byte encryption limit.
-// the one byte payload length is not encrypted
+// Can be pre-defined to a smaller size (to save SRAM) prior to including this header.
 #ifndef RH_E220_MAX_MESSAGE_LEN
 #define RH_E220_MAX_MESSAGE_LEN (RH_E220_MAX_PAYLOAD_LEN - RH_E220_HEADER_LEN)
 #endif
@@ -123,8 +117,10 @@
 ///
 /// All messages sent and received by this Driver conform to this packet format:
 ///
-/// - 5 octets HEADER: (LENGTH,  TO, FROM, ID, FLAGS)
-/// - 0 to 53 octets DATA
+/// - 3 octets PREAMBLE
+/// - 1 octet LENGTH
+/// - 4 octets HEADER: (TO, FROM, ID, FLAGS)
+/// - 0 to 187 octets DATA
 ///
 
 class RH_E220 : public RHGenericDriver {
@@ -167,12 +163,7 @@ public:
     uint8_t maxMessageLength() override;
 
     /// Determine if the currently selected radio channel is active.
-    /// This is expected to be subclassed by specific radios to implement their Channel Activity Detection
-    /// if supported. If the radio does not support CAD, returns true immediately. If a RadioHead radio
-    /// supports isChannelActive() it will be documented in the radio specific documentation.
-    /// This is called automatically by waitCAD().
-    /// \return true if the radio-specific CAD (as returned by override of isChannelActive()) shows the
-    /// current radio channel as active, else false. If there is no radio-specific CAD, returns false.
+    /// \return true if the radio-specific CAD shows the current radio channel as active, else false.
     bool isChannelActive() override;
 
     /// \brief Values to be passed to setDataRate() to control the on-air data rate
@@ -222,19 +213,19 @@ public:
 
     void setTarget(uint8_t addh, uint8_t addl, uint8_t chan);
 
-    /// \brief Values to be passed to setPower() to control the transmitter power
+    /// \brief Values to be passed to setTxPower() to control the transmitter power
     ///
     typedef enum {
-        Power22dBm = RH_E220_PARAM_OPT1_TX_POWER_22,
-        Power17dBm = RH_E220_PARAM_OPT1_TX_POWER_17,
-        Power13dBm = RH_E220_PARAM_OPT1_TX_POWER_13,
-        Power10dBm = RH_E220_PARAM_OPT1_TX_POWER_10,
-    } PowerLevel;
+        TxPower22dBm = RH_E220_PARAM_OPT1_TX_POWER_22,
+        TxPower17dBm = RH_E220_PARAM_OPT1_TX_POWER_17,
+        TxPower13dBm = RH_E220_PARAM_OPT1_TX_POWER_13,
+        TxPower10dBm = RH_E220_PARAM_OPT1_TX_POWER_10,
+    } TxPowerLevel;
 
     /// Sets the transmitter power output
     /// \param[in] level A valid power setting from the Power enum
     /// \return true if successful
-    bool setPower(PowerLevel level);
+    bool setTxPower(TxPowerLevel level);
 
     bool setAddress(uint8_t addh, uint8_t addl);
 

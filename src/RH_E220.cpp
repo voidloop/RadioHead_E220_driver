@@ -338,7 +338,7 @@ void RH_E220::setTarget(uint8_t addh, uint8_t addl, uint8_t chan) {
     _target.chan = chan;
 }
 
-bool RH_E220::setPower(PowerLevel level) {
+bool RH_E220::setTxPower(TxPowerLevel level) {
     Parameters params;
     if (!readParameters(params))
         return false;
