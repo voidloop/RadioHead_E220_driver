@@ -98,7 +98,12 @@
 // +----------+-----+---------+---------+-------+
 // | 3        | 1   | 4       | 187     | 2     |
 // +----------+-----+---------+---------+-------+
-// The first 3 octets (before PREAMBLE) are the target (see EBYTE documentation).
+// For the sender only, the first 3 octets (before PREAMBLE) are the target (see EBYTE documentation).
+// For the receiver only, the last byte is the RSSI (see EBYTE documentation).
+
+// This is for activate the RSSI byte
+// (define? or let this option editable at runtime?)
+#define RH_E220_RSSI_BYTE_ENABLED
 
 #define RH_E220_MAX_PAYLOAD_LEN   191 // HEADER + MESSAGE
 
@@ -108,10 +113,6 @@
 #ifndef RH_E220_MAX_MESSAGE_LEN
 #define RH_E220_MAX_MESSAGE_LEN (RH_E220_MAX_PAYLOAD_LEN - RH_E220_HEADER_LEN)
 #endif
-
-// This is for activate the RSSI byte
-// (define? or let this option editable at runtime?)
-#define RH_E220_RSSI_BYTE_ENABLED
 
 /////////////////////////////////////////////////////////////////////
 /// \class RH_E220 RH_E220.h <RH_E220.h>

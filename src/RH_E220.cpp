@@ -4,7 +4,7 @@
 
 #ifdef RH_HAVE_SERIAL
 
-RH_E220::RH_E220(Stream &stream, uint8_t m0Pin, uint8_t m1Pin, uint8_t auxPin)
+RH_E220::RH_E220(Stream &stream, uint8_t m0Pin, uint8_t m1Pin, uint8_t auxPin) // NOLINT(cppcoreguidelines-pro-type-member-init)
         : _stream(stream),
           _rxState(RxStateInitialising),
           _auxPin(auxPin),
