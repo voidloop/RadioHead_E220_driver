@@ -94,7 +94,7 @@
 // +---------+---------------+-------+
 // | 5       | 190           | 2     |
 // +---------+---------------+-------+
-// For the sender only, the first 3 octets (before PREAMBLE) are the target (see EBYTE documentation).
+// For the sender only, the first 3 octets are the target (see EBYTE documentation).
 // For the receiver only, the last byte is the RSSI (see EBYTE documentation).
 
 // This is for activate the RSSI byte

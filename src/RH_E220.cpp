@@ -163,7 +163,7 @@ bool RH_E220::recv(uint8_t *buf, uint8_t *len) {
     }
 
     if (buf && len) {
-        // Skip the 4 headers that are at the beginning of the rxBuf
+        // Skip the 5 headers that are at the beginning of the rxBuf
         if (*len > _rxBufLen - RH_E220_HEADER_LEN)
             *len = _rxBufLen - RH_E220_HEADER_LEN;
         memcpy(buf, _rxBuf + RH_E220_HEADER_LEN, *len);
@@ -251,8 +251,7 @@ void RH_E220::setOperatingMode(OperatingMode mode) {
     }
 
     waitAuxHigh();
-    // I don't understand this delay...
-    delay(10); // Takes a little while to start its response
+    delay(10);
 }
 
 bool RH_E220::readParameters(Parameters &params) {
