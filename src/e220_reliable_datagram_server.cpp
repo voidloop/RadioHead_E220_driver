@@ -22,8 +22,8 @@ void setup()
 
     Serial.println("Initializing...");
 
-    // Remember to set serial baud rate before call initialise
-    // the driver or any other driver.set* function
+    // Remember to set serial baud rate before initialise
+    // the driver or any call other driver.set* function
     Serial1.begin(RH_E220_CONFIG_UART_BAUD);
 
     driver.setChannel(0x16);
