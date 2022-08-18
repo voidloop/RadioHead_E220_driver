@@ -239,12 +239,9 @@ protected:
     /// \brief Defines different receiver states in teh receiver state machine
     typedef enum {
         RxStateInitialising = 0,  ///< Before init() is called
-        RxStateIdle,              ///< Waiting for an first PREAMBLE
-        RxStatePreamble1,         ///< Waiting for an second PREAMBLE
-        RxStatePreamble2,         ///< Waiting for an third PREAMBLE
-        RxStateLength,            ///< Got the length of receiving data
+        RxStateIdle,              ///< Got the length of receiving data
         RxStateData,              ///< Receiving data
-        RxStateWaitFCS1,          ///< Got DLE ETX, waiting for first FCS octet
+        RxStateWaitFCS1,          ///< Got last octet, waiting for first FCS octet
         RxStateWaitFCS2,          ///< Waiting for second FCS octet
 #ifdef RH_E220_RSSI_BYTE_ENABLED
         RxStateWaitRSSI,          ///< Waiting for RSSI byte
