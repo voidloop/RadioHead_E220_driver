@@ -84,19 +84,16 @@
 
 // The length of the headers we add.
 // The headers are inside the payload and are therefore protected by the FCS
-#define RH_E220_HEADER_LEN 4
-
-// This is the preamble octet.
-#define PREAMBLE 0xAA
+#define RH_E220_HEADER_LEN 5
 
 // Maximum message length of the packet that can be supported by this driver.
-// +----------------+-------------------+-------+
-// | FRAME          | PAYLOAD           | FRAME |
-// +----------+-----+---------+---------+-------+
-// | PREAMBLE | LEN | HEADER  | MESSAGE | FCS   |
-// +----------+-----+---------+---------+-------+
-// | 3        | 1   | 4       | 187     | 2     |
-// +----------+-----+---------+---------+-------+
+// +-------------------------+-------+
+// | PAYLOAD                 | FCS   |
+// +---------+---------------+-------+
+// | HEADER  | MESSAGE       | FCS   |
+// +---------+---------------+-------+
+// | 5       | 190           | 2     |
+// +---------+---------------+-------+
 // For the sender only, the first 3 octets (before PREAMBLE) are the target (see EBYTE documentation).
 // For the receiver only, the last byte is the RSSI (see EBYTE documentation).
 
@@ -104,7 +101,7 @@
 // (define? or let this option editable at runtime?)
 #define RH_E220_RSSI_BYTE_ENABLED
 
-#define RH_E220_MAX_PAYLOAD_LEN   191 // HEADER + MESSAGE
+#define RH_E220_MAX_PAYLOAD_LEN   195 // HEADER + MESSAGE
 
 // This is the maximum message length that can be supported by this library.
 // It is an arbitrary limit.
