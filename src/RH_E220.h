@@ -75,13 +75,12 @@
 
 
 // Defaults
-#define RH_E220_DEFAULT_POWER       RH_E220_PARAM_OPT1_TX_POWER_10
+#define RH_E220_DEFAULT_TX_POWER    RH_E220_PARAM_OPT1_TX_POWER_10
 #define RH_E220_DEFAULT_DATA_RATE   RH_E220_PARAM_SPED_DATA_RATE_2400
 #define RH_E220_DEFAULT_UART_MODE   RH_E220_PARAM_SPED_UART_MODE_8N1
 #define RH_E220_DEFAULT_UART_BAUD   RH_E220_PARAM_SPED_UART_BAUD_9600
 
 #define RH_E220_CONFIG_UART_BAUD    9600
-
 
 // The length of the headers we add.
 // The headers are inside the payload and are therefore protected by the FCS
@@ -278,8 +277,7 @@ protected:
         uint8_t opt2;      ///< Various control options
     } Parameters;
 
-    /// Read the radio configuration parameters into
-    /// local memory
+    /// Read the radio configuration parameters into local memory
     /// \param[in] params Reference to a Parameter structure which will be filled if successful
     /// \return true if successful
     bool readParameters(Parameters &params);
@@ -310,7 +308,6 @@ protected:
     void validateRxBuf();
 
     /// Sends a single data octet to the stream port.
-    /// Implements DLE stuffing and keeps track of the senders FCS
     void txData(uint8_t ch);
 
 private:

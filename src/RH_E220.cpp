@@ -32,7 +32,7 @@ bool RH_E220::init() {
                    RH_E220_DEFAULT_UART_MODE |
                    RH_E220_DEFAULT_DATA_RATE;
 
-    uint8_t opt1 = RH_E220_DEFAULT_POWER;
+    uint8_t opt1 = RH_E220_DEFAULT_TX_POWER;
 
     uint8_t opt2 = RH_E220_PARAM_OPT2_TX_METHOD_FIXED |
                    RH_E220_PARAM_OPT2_WOR_CYCLE_2000;

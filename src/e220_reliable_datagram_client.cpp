@@ -3,10 +3,6 @@
 
 #include "RH_E220.h"
 
-#define M0_PIN 2
-#define M1_PIN 3
-#define AUX_PIN 6
-
 #define CLIENT_ADDRESS 1
 #define SERVER_ADDRESS 2
 
@@ -19,6 +15,7 @@ void setup() {
     Serial.begin(115200);
 
     delay(3000);
+
     Serial.println("Initializing...");
 
     // Remember to set serial baud rate before call initialise
