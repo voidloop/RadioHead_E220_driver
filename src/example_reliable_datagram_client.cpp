@@ -63,6 +63,8 @@ void loop() {
     } else {
         Serial.println("sendtoWait failed");
     }
+
+    delay(10000);
 }
 
 
