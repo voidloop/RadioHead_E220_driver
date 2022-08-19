@@ -14,6 +14,10 @@ RH_E220_Serial driver(Serial1, M0_PIN, M1_PIN, AUX_PIN); // NOLINT(cppcoreguidel
 // Class to manage message delivery and receipt, using the driver declared above
 RHReliableDatagram manager(driver, SERVER_ADDRESS);
 
+void activityIsr() {
+    digitalWrite(LED_BUILTIN, !digitalRead(AUX_PIN));
+}
+
 void setup() {
     Serial.begin(115200);
     delay(3000);
@@ -35,6 +39,9 @@ void setup() {
     Serial1.begin(9600);
 
     manager.setTimeout(2000);
+
+    pinMode(LED_BUILTIN, OUTPUT);
+    attachInterrupt(digitalPinToInterrupt(AUX_PIN), activityIsr, CHANGE);
 }
 
 uint8_t data[] = "PONG!";
