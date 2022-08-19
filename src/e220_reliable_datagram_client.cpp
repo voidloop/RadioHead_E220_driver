@@ -1,12 +1,11 @@
 #include <Arduino.h>
 #include <RHReliableDatagram.h>
 
-#include "RH_E220.h"
+#include "RH_E220_Serial.h"
 
-#define CLIENT_ADDRESS 1
 #define SERVER_ADDRESS 2
 
-RH_E220 driver(Serial1, M0_PIN, M1_PIN, AUX_PIN); // NOLINT(cppcoreguidelines-interfaces-global-init)
+RH_E220_Serial driver(Serial1, M0_PIN, M1_PIN, AUX_PIN); // NOLINT(cppcoreguidelines-interfaces-global-init)
 
 // Class to manage message delivery and receipt, using the driver declared above
 RHReliableDatagram manager(driver, CLIENT_ADDRESS);
@@ -22,8 +21,7 @@ void setup() {
     // the driver or any other driver.set* function
     Serial1.begin(RH_E220_CONFIG_UART_BAUD);
 
-    driver.setChannel(0x14);
-    driver.setTarget(0xFF, 0xFF, 0x16);
+    driver.setChannel(0x16);
 
     if (!manager.init())
         Serial.println("Failed");
@@ -37,17 +35,16 @@ void setup() {
     manager.setTimeout(2000);
 }
 
-uint8_t data[RH_E220_MAX_MESSAGE_LEN] = "PING";
-
+uint8_t data[RH_SERIAL_MAX_MESSAGE_LEN] = "PING";
 
 // Don't put this on the stack
-uint8_t buf[RH_E220_MAX_MESSAGE_LEN];
+uint8_t buf[RH_SERIAL_MAX_MESSAGE_LEN];
 
 void loop() {
     Serial.println("Sending to e220_reliable_datagram_server");
 
     // Send a message to manager_server
-    if (manager.sendtoWait(data, RH_E220_MAX_MESSAGE_LEN/2, SERVER_ADDRESS)) {
+    if (manager.sendtoWait(data, RH_SERIAL_MAX_MESSAGE_LEN, SERVER_ADDRESS)) {
         // Now wait for a reply from the server
         uint8_t len = sizeof(buf);
         uint8_t from;

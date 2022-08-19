@@ -217,7 +217,8 @@ bool RH_E220::send(const uint8_t *data, uint8_t len) {
     _stream.write(PREAMBLE); // Not in FCS
 
     // First the 5 headers
-    txData(len + RH_E220_HEADER_LEN);
+//    txData(len + RH_E220_HEADER_LEN);
+    txData(70);
     txData(_txHeaderTo);
     txData(_txHeaderFrom);
     txData(_txHeaderId);
