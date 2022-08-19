@@ -143,7 +143,6 @@ void RH_E220::handleRx(uint8_t ch) {
         case RxStateWaitRSSI: {
             _lastRssi = ch;
             _rxState = RxStateIdle;
-            Serial.println();
             validateRxBuf();
         }
             break;
