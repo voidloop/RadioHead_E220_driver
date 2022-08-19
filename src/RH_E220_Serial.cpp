@@ -17,8 +17,6 @@ RH_E220_Serial::RH_E220_Serial(HardwareSerial &serial, uint8_t m0Pin, uint8_t m1
 }
 
 bool RH_E220_Serial::init() {
-    setMode(RHModeRx);
-
     if (!RH_Serial::init())
         return false;
 
@@ -56,6 +54,7 @@ bool RH_E220_Serial::init() {
             return false;
     }
 
+    setMode(RHModeRx);
     return true;
 }
 
@@ -63,7 +62,7 @@ bool RH_E220_Serial::recv(uint8_t *buf, uint8_t *len) {
     bool rv = RH_Serial::recv(buf, len);
 
 #ifdef RH_E220_RSSI_BYTE_ENABLED
-    // Retrieve RSSI from the serial after read data
+    // Retrieve RSSI from the serial after a successful read
     if (rv && _serial.available()) {
         _lastRssi = (int16_t) (-(256 - (uint8_t) _serial.read()));
     }
@@ -73,9 +72,10 @@ bool RH_E220_Serial::recv(uint8_t *buf, uint8_t *len) {
 }
 
 bool RH_E220_Serial::send(const uint8_t* data, uint8_t len) {
-    bool rv = RH_Serial::send(data, len);
-    setMode(RHModeTx);
-    return rv;
+    bool sent = RH_Serial::send(data, len);
+    if (sent)
+        setMode(RHModeTx);
+    return sent;
 }
 
 bool RH_E220_Serial::waitPacketSent() {

@@ -12,24 +12,19 @@ RHReliableDatagram manager(driver, CLIENT_ADDRESS);
 
 void setup() {
     Serial.begin(115200);
+    Serial1.begin(RH_E220_CONFIG_UART_BAUD);
 
     delay(3000);
 
     Serial.println("Initializing...");
 
-    // Remember to set serial baud rate before call initialise
-    // the driver or any other driver.set* function
-    Serial1.begin(RH_E220_CONFIG_UART_BAUD);
+    if (!manager.init()) {
+        Serial.println("Failed");
+    } else {
+        Serial.println("Done");
+    }
 
     driver.setChannel(0x16);
-
-    if (!manager.init())
-        Serial.println("Failed");
-    else
-        Serial.println("Done");
-
-    // Remember to set serial baud rate after driver initialisation
-    Serial1.begin(9600);
 
     // It seems a good timeout for this experiment
     manager.setTimeout(2000);
@@ -41,7 +36,7 @@ uint8_t data[RH_SERIAL_MAX_MESSAGE_LEN] = "PING";
 uint8_t buf[RH_SERIAL_MAX_MESSAGE_LEN];
 
 void loop() {
-    Serial.println("Sending to e220_reliable_datagram_server");
+    Serial.println("Sending to example_reliable_datagram_server");
 
     // Send a message to manager_server
     if (manager.sendtoWait(data, RH_SERIAL_MAX_MESSAGE_LEN, SERVER_ADDRESS)) {
@@ -54,10 +49,11 @@ void loop() {
             Serial.print(": ");
             Serial.println((char *) buf);
         } else {
-            Serial.println("No reply, is e220_reliable_datagram_server running?");
+            Serial.println("No reply, is example_reliable_datagram_server running?");
         }
-    } else
+    } else {
         Serial.println("sendtoWait failed");
+    }
 }
 
 
