@@ -86,7 +86,9 @@
 // The headers are inside the payload and are therefore protected by the FCS
 #define RH_E220_HEADER_LEN 5
 
-// Maximum message length of the packet that can be supported by this driver.
+
+// Packet shape (I removed the preamble, but probably it could realign the stream in case
+// of malicious packets with wrong length).
 // +-------------------------+-------+
 // | PAYLOAD                 | FCS   |
 // +---------+---------------+-------+
@@ -101,6 +103,7 @@
 // (define? or let this option editable at runtime?)
 #define RH_E220_RSSI_BYTE_ENABLED
 
+// Maximum message length of the packet that can be supported by this driver.
 #define RH_E220_MAX_PAYLOAD_LEN   195 // HEADER + MESSAGE
 
 // This is the maximum message length that can be supported by this library.
@@ -118,12 +121,11 @@
 ///
 /// All messages sent and received by this Driver conform to this packet format:
 ///
-/// - 3 octets PREAMBLE
-/// - 1 octet LENGTH
-/// - 4 octets HEADER: (TO, FROM, ID, FLAGS)
-/// - 0 to 187 octets DATA
+/// - [3 octet TARGET] (only sender)
+/// - 5 octets HEADER: (LENGTH, TO, FROM, ID, FLAGS)
+/// - 0 to 190 octets DATA
 /// - 2 octets FCS
-/// - 1 octet RSSI (if active)
+/// - [1 octet RSSI] (only receiver, if active)
 ///
 
 class RH_E220 : public RHGenericDriver {
