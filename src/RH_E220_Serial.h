@@ -103,7 +103,7 @@ public:
     /// \return true if a valid message was copied to buf
     bool recv(uint8_t *buf, uint8_t *len) override;
 
-    /// Waits until any previous transmit packet is finished being transmitted with waitCAD (See RH_Serial.cpp).
+    /// Waits until any previous transmit packet is finished being transmitted with waitPacketSent.
     /// Then loads a message into the transmitter and starts the transmitter. Note that a message length
     /// of 0 is permitted.
     /// \param[in] data Array of data to be sent
