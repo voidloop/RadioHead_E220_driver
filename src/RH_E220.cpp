@@ -61,9 +61,10 @@ bool RH_E220::init() {
 bool RH_E220::available() {
     while (!_rxBufValid && _stream.available()) {
         uint8_t ch = _stream.read();
-        //Serial.print(ch);
+        Serial.print(ch, HEX); Serial.print(' ');
         handleRx(ch);
     }
+
     return _rxBufValid;
 }
 
@@ -73,29 +74,28 @@ void RH_E220::waitAuxHigh() const {
 }
 
 void RH_E220::handleRx(uint8_t ch) {
-    static uint8_t dataLen = 0;
-
     // State machine for receiving chars
     switch (_rxState) {
         case RxStateIdle: {
             if (ch == PREAMBLE) {
-                _rxState = RxStatePreamble1;
-            }
-        }
-            break;
-
-        case RxStatePreamble1: {
-            if (ch == PREAMBLE) {
                 _rxState = RxStatePreamble2;
-            } else {
-                _rxState = RxStateIdle;
             }
         }
             break;
 
         case RxStatePreamble2: {
             if (ch == PREAMBLE) {
+                _rxState = RxStatePreamble3;
+            } else {
+                _rxState = RxStateIdle;
+            }
+        }
+            break;
+
+        case RxStatePreamble3: {
+            if (ch == PREAMBLE) {
                 _rxState = RxStateLength;
+                clearRxBuf();
             } else {
                 _rxState = RxStateIdle;
             }
@@ -103,21 +103,21 @@ void RH_E220::handleRx(uint8_t ch) {
             break;
 
         case RxStateLength: {
-            dataLen = ch;
-            if (dataLen < RH_E220_HEADER_LEN || dataLen > RH_E220_MAX_PAYLOAD_LEN) {
+            appendRxBuf(ch);
+            if (_rxBuf[0] < RH_E220_HEADER_LEN || _rxBuf[0] > RH_E220_MAX_PAYLOAD_LEN) {
                 // Broken packet or junk?
                 _rxState = RxStateIdle;
             } else {
-                clearRxBuf();
+                _rxBuf[0]--;
                 _rxState = RxStateData;
             }
         }
             break;
 
         case RxStateData: {
-            dataLen--;
+            _rxBuf[0]--;
             appendRxBuf(ch);
-            if (dataLen == 0)
+            if (_rxBuf[0] == 0)
                 _rxState = RxStateWaitFCS1;
         }
             break;
@@ -143,6 +143,7 @@ void RH_E220::handleRx(uint8_t ch) {
         case RxStateWaitRSSI: {
             _lastRssi = ch;
             _rxState = RxStateIdle;
+            Serial.println();
             validateRxBuf();
         }
             break;
@@ -160,11 +161,11 @@ void RH_E220::validateRxBuf() {
         return;
     }
 
-    // Extract the 4 headers
-    _rxHeaderTo = _rxBuf[0];
-    _rxHeaderFrom = _rxBuf[1];
-    _rxHeaderId = _rxBuf[2];
-    _rxHeaderFlags = _rxBuf[3];
+    // Extract the headers
+    _rxHeaderTo = _rxBuf[1];
+    _rxHeaderFrom = _rxBuf[2];
+    _rxHeaderId = _rxBuf[3];
+    _rxHeaderFlags = _rxBuf[4];
     if (_promiscuous ||
         _rxHeaderTo == _thisAddress ||
         _rxHeaderTo == RH_BROADCAST_ADDRESS) {
@@ -215,9 +216,9 @@ bool RH_E220::send(const uint8_t *data, uint8_t len) {
     _stream.write(PREAMBLE); // Not in FCS
     _stream.write(PREAMBLE); // Not in FCS
     _stream.write(PREAMBLE); // Not in FCS
-    _stream.write(len + RH_E220_HEADER_LEN); // Not in FCS
 
-    // First the 4 headers
+    // First the 5 headers
+    txData(len + RH_E220_HEADER_LEN);
     txData(_txHeaderTo);
     txData(_txHeaderFrom);
     txData(_txHeaderId);
