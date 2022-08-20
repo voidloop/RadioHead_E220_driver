@@ -20,37 +20,26 @@ bool RH_E220_Serial::init() {
     if (!RH_Serial::init())
         return false;
 
-    Parameters params;
-    if (!readParameters(params))
+    Parameters currentParams;
+    if (!readParameters(currentParams))
         return false;
 
-    uint8_t addh = 0xFF;
-    uint8_t addl = 0xFF;
-    uint8_t sped = RH_E220_DEFAULT_UART_BAUD |
-                   RH_E220_DEFAULT_UART_MODE |
-                   RH_E220_DEFAULT_DATA_RATE;
-
-    uint8_t opt1 = RH_E220_DEFAULT_TX_POWER;
-
-    uint8_t opt2 = RH_E220_PARAM_OPT2_WOR_CYCLE_2000;
+    Parameters defaultParams;
+    defaultParams.addh = 0xFF;
+    defaultParams.addl = 0xFF;
+    defaultParams.chan = 0x17;
+    defaultParams.sped = RH_E220_DEFAULT_UART_BAUD |
+                         RH_E220_DEFAULT_UART_MODE |
+                         RH_E220_DEFAULT_DATA_RATE;
+    defaultParams.opt1 = RH_E220_DEFAULT_TX_POWER;
+    defaultParams.opt2 = RH_E220_PARAM_OPT2_WOR_CYCLE_2000;
 
 #ifdef RH_E220_RSSI_BYTE_ENABLED
-    opt2 |= RH_E220_PARAM_OPT2_RSSI_BYTE_ENABLE;
+    defaultParams.opt2 |= RH_E220_PARAM_OPT2_RSSI_BYTE_ENABLE;
 #endif
 
-    bool write = params.addh != addh ||
-                 params.addl != addl ||
-                 params.sped != sped ||
-                 params.opt1 != opt1 ||
-                 params.opt2 != opt2;
-
-    if (write) {
-        params.addh = addh;
-        params.addl = addl;
-        params.sped = sped;
-        params.opt1 = opt1;
-        params.opt2 = opt2;
-        if (!writeParameters(params, true))
+    if (memcmp(&defaultParams, &currentParams, sizeof(Parameters)) != 0) {
+        if (!writeParameters(currentParams, true))
             return false;
     }
 
@@ -71,7 +60,7 @@ bool RH_E220_Serial::recv(uint8_t *buf, uint8_t *len) {
     return rv;
 }
 
-bool RH_E220_Serial::send(const uint8_t* data, uint8_t len) {
+bool RH_E220_Serial::send(const uint8_t *data, uint8_t len) {
     bool sent = RH_Serial::send(data, len);
     if (sent)
         setMode(RHModeTx);
