@@ -39,7 +39,7 @@ bool RH_E220_Serial::init() {
 #endif
 
     if (memcmp(&defaultParams, &currentParams, sizeof(Parameters)) != 0) {
-        if (!writeParameters(currentParams, true))
+        if (!writeParameters(defaultParams, true))
             return false;
     }
 
