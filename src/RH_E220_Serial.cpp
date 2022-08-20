@@ -25,14 +25,14 @@ bool RH_E220_Serial::init() {
         return false;
 
     Parameters defaultParams;
-    defaultParams.addh = 0xFF;
-    defaultParams.addl = 0xFF;
-    defaultParams.chan = 0x17;
+    defaultParams.addh = RH_E220_DEFAULT_ADDRESS_HIGH;
+    defaultParams.addl = RH_E220_DEFAULT_ADDRESS_LOW;
+    defaultParams.chan = RH_E220_DEFAULT_CHANNEL;
     defaultParams.sped = RH_E220_DEFAULT_UART_BAUD |
                          RH_E220_DEFAULT_UART_MODE |
                          RH_E220_DEFAULT_DATA_RATE;
     defaultParams.opt1 = RH_E220_DEFAULT_TX_POWER;
-    defaultParams.opt2 = RH_E220_PARAM_OPT2_WOR_CYCLE_2000;
+    defaultParams.opt2 = RH_E220_DEFAULT_WOR_CYCLE;
 
 #ifdef RH_E220_RSSI_BYTE_ENABLED
     defaultParams.opt2 |= RH_E220_PARAM_OPT2_RSSI_BYTE_ENABLE;
@@ -48,16 +48,17 @@ bool RH_E220_Serial::init() {
 }
 
 bool RH_E220_Serial::recv(uint8_t *buf, uint8_t *len) {
-    bool rv = RH_Serial::recv(buf, len);
+    bool copied = RH_Serial::recv(buf, len);
 
 #ifdef RH_E220_RSSI_BYTE_ENABLED
     // Retrieve RSSI from the serial after a successful read
-    if (rv && _serial.available()) {
-        _lastRssi = (int16_t) (-(256 - (uint8_t) _serial.read()));
+    if (copied && _serial.available()) {
+        uint8_t rssiByte = _serial.read();
+        _lastRssi = (int16_t) (-256 + rssiByte);
     }
 #endif
 
-    return rv;
+    return copied;
 }
 
 bool RH_E220_Serial::send(const uint8_t *data, uint8_t len) {
