@@ -5,11 +5,17 @@
 
 #define SERVER_ADDRESS 2
 
-#define AUX_PIN 6
-#define M0_PIN 2
-#define M1_PIN 3
+#ifndef ARDUINO_ARCH_RP2040
+    #include <SoftwareSerial.h>
+    SoftwareSerial softwareSerial(10, 11);
+    #define driverSerial Serial
+    #define debugSerial softwareSerial
+#else
+    #define driverSerial Serial1
+    #define debugSerial Serial
+#endif
 
-RH_E220_Serial driver(Serial1, M0_PIN, M1_PIN, AUX_PIN); // NOLINT(cppcoreguidelines-interfaces-global-init)
+RH_E220_Serial driver(driverSerial, M0_PIN, M1_PIN, AUX_PIN); // NOLINT(cppcoreguidelines-interfaces-global-init)
 
 // Class to manage message delivery and receipt, using the driver declared above
 RHReliableDatagram manager(driver, SERVER_ADDRESS);
@@ -19,24 +25,16 @@ void activityIsr() {
 }
 
 void setup() {
-    Serial.begin(115200);
+    debugSerial.begin(115200);
+    driverSerial.begin(9600);
     delay(3000);
 
-    Serial.println("Initializing...");
-
-    // Remember to set serial baud rate before initialise
-    // the driver or any call other driver.set* function
-    Serial1.begin(RH_E220_CONFIG_UART_BAUD);
+    debugSerial.println("Initializing...");
 
     if (!manager.init())
-        Serial.println("Failed");
+        debugSerial.println("Failed");
     else
-        Serial.println("Done");
-
-    driver.setChannel(0x16);
-
-    // Remember to set serial baud rate after driver initialisation
-    Serial1.begin(9600);
+        debugSerial.println("Done");
 
     manager.setTimeout(2000);
 
@@ -56,14 +54,14 @@ void loop() {
     uint8_t from;
 
     if (manager.recvfromAck(buf, &len, &from)) {
-        Serial.print("got request from : 0x");
-        Serial.print(from, HEX);
-        Serial.print(": ");
-        Serial.println((char *) buf);
+        debugSerial.print("got request from : 0x");
+        debugSerial.print(from, HEX);
+        debugSerial.print(": ");
+        debugSerial.println((char *) buf);
 
         // Send a reply back to the originator client
         if (!manager.sendtoWait(data, sizeof(data), from)) {
-            Serial.println("sendtoWait failed");
+            debugSerial.println("sendtoWait failed");
         }
     }
 }
