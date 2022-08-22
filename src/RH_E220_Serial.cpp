@@ -1,7 +1,3 @@
-//
-// Created by exp on 19/08/22.
-//
-
 #include "RH_E220_Serial.h"
 
 RH_E220_Serial::RH_E220_Serial(HardwareSerial &serial, uint8_t m0Pin, uint8_t m1Pin, uint8_t auxPin) :
